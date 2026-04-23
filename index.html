@@ -149,18 +149,6 @@ mark{background:#fef08a;border-radius:2px;padding:0 2px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-size:14px;font-weight:700;color:var(--gray);}
 
-/* ── 업로드 결과 패널 ── */
-.sheet-result{max-width:1400px;margin:14px auto 0;padding:0 16px;display:none;}
-.sheet-result-inner{background:var(--white);border-radius:12px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-left:4px solid var(--green);}
-.sheet-result-title{font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
-.sheet-result-title span{font-size:12px;font-weight:400;color:var(--gray);cursor:pointer;}
-.sheet-result-title span:hover{color:var(--red);}
-.sheet-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;}
-.chip-kept{background:var(--green-l);color:var(--green);border:1.5px solid var(--green);}
-.chip-skip{background:var(--gray-l);color:var(--gray);border:1.5px dashed var(--border);text-decoration:line-through;opacity:.7;}
-.chip-arrow{color:var(--gray);font-size:16px;margin:0 2px;}
-
 @media(max-width:600px){
   .hdr-title{font-size:15px;}
   .tab{padding:7px 12px;font-size:12px;}
@@ -234,21 +222,10 @@ mark{background:#fef08a;border-radius:2px;padding:0 2px;}
 <div class="search-wrap" id="search-wrap">
   <div class="search-box">
     <input type="text" class="search-input" id="search-input"
-      placeholder="🔍  이름 · 주소 · 전화번호 · 품목 입력 → 전체 누적 원장 통합검색  (Ctrl+F)"
+      placeholder="🔍  이름 · 주소 · 전화번호 · 품목 입력 → 전체 누적 원장 통합검색"
       oninput="doSearch()">
     <button class="search-clear" onclick="clearSearch()">✕ 초기화</button>
     <span class="result-count" id="result-count"></span>
-  </div>
-</div>
-
-<!-- 업로드 시트 결과 패널 -->
-<div class="sheet-result" id="sheet-result">
-  <div class="sheet-result-inner">
-    <div class="sheet-result-title">
-      <span>📋 마지막 업로드 시트 처리 결과</span>
-      <span onclick="document.getElementById('sheet-result').style.display='none'">✕ 닫기</span>
-    </div>
-    <div class="sheet-chips" id="sheet-chips"></div>
   </div>
 </div>
 
@@ -443,12 +420,6 @@ function processFile(file) {
 
       const totalRows = Object.values(dateData).reduce((s, a) => s + a.length, 0);
 
-      // ── 시트 결과 패널 표시 ──
-      const allSheets   = wb.SheetNames;
-      const keptSheets  = KEEP_SHEETS.filter(s => dateData[s]);
-      const skipSheets  = allSheets.filter(s => !KEEP_SHEETS.includes(s));
-      showSheetResult(keptSheets, skipSheets, dateData);
-
       if (!IS_FB_CONFIGURED) {
         // 로컬 폴백
         allData[dateKey] = dateData;
@@ -505,47 +476,6 @@ function showLoading(msg) {
 function hideLoading() {
   document.getElementById('loading-overlay').classList.add('hidden');
 }
-
-// ══ 업로드 시트 결과 패널 ══
-function showSheetResult(keptSheets, skipSheets, dateData) {
-  const panel = document.getElementById('sheet-result');
-  const chips = document.getElementById('sheet-chips');
-
-  let html = '';
-
-  // 저장된 시트
-  keptSheets.forEach(s => {
-    const cnt = (dateData[s] || []).length;
-    const colors = {'잠실본동':'chip-kept','삼전동':'chip-kept','아파트':'chip-kept'};
-    html += `<span class="chip chip-kept">✅ ${s} <b>${cnt}건</b></span>`;
-  });
-
-  if (skipSheets.length > 0) {
-    html += `<span class="chip-arrow">→ 제외:</span>`;
-    skipSheets.forEach(s => {
-      html += `<span class="chip chip-skip">❌ ${s}</span>`;
-    });
-  } else {
-    html += `<span style="font-size:12px;color:var(--gray);margin-left:4px;">다른 시트 없음</span>`;
-  }
-
-  chips.innerHTML = html;
-  panel.style.display = '';
-
-  // 5초 후 자동 닫기
-  clearTimeout(panel._timer);
-  panel._timer = setTimeout(() => panel.style.display = 'none', 8000);
-}
-
-// ══ Ctrl+F 단축키 → 검색창 포커스 ══
-document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-    e.preventDefault();
-    const input = document.getElementById('search-input');
-    input.focus();
-    input.select();
-  }
-});
 
 // ══ 전체 렌더 ══
 function renderAll() {
@@ -795,8 +725,10 @@ function doSearch() {
   if (curSearch) {
     renderSearchResults(curSearch);
   } else {
-    document.getElementById('tab-wrap').style.display    = '';
-    document.getElementById('filter-wrap').style.display = '';
+    const hasDates = Object.keys(allData).length > 0;
+    document.getElementById('tab-wrap').style.display    = hasDates ? '' : 'none';
+    document.getElementById('filter-wrap').style.display = hasDates ? '' : 'none';
+    document.getElementById('table-wrap').style.display  = hasDates ? '' : 'none';
     renderTabs();
   }
   updateCount();
@@ -805,6 +737,7 @@ function doSearch() {
 function renderSearchResults(q) {
   document.getElementById('tab-wrap').style.display    = 'none';
   document.getElementById('filter-wrap').style.display = 'none';
+  document.getElementById('table-wrap').style.display  = '';
 
   const box     = document.getElementById('table-box');
   const allRows = getAllRows();
@@ -930,5 +863,5 @@ function showToast(msg) {
 }
 </script>
 </body>
-</html>010-8954-9435
+</html>
 
