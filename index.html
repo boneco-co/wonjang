@@ -125,7 +125,17 @@ body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100
 .subtab-row{background:var(--white);border-radius:0 12px 0 0;padding:8px 14px 0;display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--blue-l);display:none;}
 .subtab-row.show{display:flex;}
 .subtab{padding:5px 14px;border-radius:8px 8px 0 0;border:none;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;background:var(--gray-l);color:var(--gray);transition:all .15s;}
-.subtab.on{background:var(--blue-l);color:var(--blue);}
+.subtab.on{background:var(--blue-l);color:var(--blue);} 
+
+/* ── 그룹 리스트 ── */
+.group-stack{display:flex;flex-direction:column;gap:18px;padding:14px;}
+.group-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--white);}
+.group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;font-size:14px;font-weight:800;}
+.group-head small{font-size:12px;font-weight:700;opacity:.85;}
+.group-head.jamsil{background:var(--blue-l);color:var(--blue);}
+.group-head.samjeon{background:var(--green-l);color:var(--green);}
+.group-head.apt{background:var(--orange-l);color:var(--orange);}
+.group-head .group-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 
 /* ── 테이블 ── */
 .table-section{max-width:1400px;margin:0 auto;padding:0 16px 40px;display:block;}
@@ -521,12 +531,12 @@ function renderAll() {
   document.getElementById('search-section').style.display = '';
   document.getElementById('table-section').style.display = '';
   document.getElementById('stats-bar').style.display = hasDates ? '' : 'none';
-  document.getElementById('tab-section').style.display = hasDates ? '' : 'none';
+  document.getElementById('tab-section').style.display = 'none';
 
   if (hasDates) {
     renderStats();
     if (isSearchMode) renderSearchResults();
-    else renderTabs();
+    else renderTable();
   } else {
     document.getElementById('tab-row').innerHTML = '';
     document.getElementById('subtab-row').className = 'subtab-row';
@@ -628,7 +638,7 @@ function selectDate(d) {
   document.getElementById('search-input').value = '';
   document.getElementById('result-count').textContent = '';
   renderFolderTree();
-  renderTabs();
+  renderTable();
 }
 
 function deleteDate(e, d) {
@@ -739,17 +749,31 @@ const COL_LABELS = {
   '입금일자':'입금일자','수거일자':'수거일자','수거원':'수거원','비고':'비고'
 };
 
-function getTabRows() {
-  const rows = [];
-  Object.keys(allData).sort().forEach(d => {
-    if (curDateFilter && d !== curDateFilter) return;
-    if (curTab === '아파트') {
-      (allData[d]?.['아파트']?.[curAptSub] || []).forEach(r => rows.push(r));
-    } else {
-      (allData[d]?.[curTab] || []).forEach(r => rows.push(r));
-    }
+function getSelectedDateGroups() {
+  if (!curDateFilter || !allData[curDateFilter]) return [];
+  const dd = allData[curDateFilter] || {};
+  const groups = [];
+
+  if ((dd['잠실본동'] || []).length) {
+    groups.push({ type:'잠실본동', label:'잠실본동', rows:dd['잠실본동'] });
+  }
+  if ((dd['삼전동'] || []).length) {
+    groups.push({ type:'삼전동', label:'삼전동', rows:dd['삼전동'] });
+  }
+
+  const apt = dd['아파트'] || {};
+  APT_SUBS.forEach(({key, label}) => {
+    const rows = apt[key] || [];
+    if (rows.length) groups.push({ type:'아파트', label:`아파트 · ${label}`, rows });
   });
-  return rows;
+
+  return groups;
+}
+
+function getGroupClass(type) {
+  if (type === '잠실본동') return 'jamsil';
+  if (type === '삼전동') return 'samjeon';
+  return 'apt';
 }
 
 function renderTable() {
@@ -764,8 +788,8 @@ function renderTable() {
     return;
   }
 
-  const rows = getTabRows();
-  if (!rows.length) {
+  const groups = getSelectedDateGroups();
+  if (!groups.length) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
       <div class="empty-text">데이터가 없습니다</div>
       <div class="empty-sub">해당 날짜에 데이터가 없습니다</div></div>`;
@@ -774,9 +798,19 @@ function renderTable() {
   }
 
   const thead = `<thead><tr>${COLS.map(c=>`<th>${COL_LABELS[c]}</th>`).join('')}</tr></thead>`;
-  const tbody = `<tbody id="tbody">${rows.map(r=>buildRow(r,'')).join('')}</tbody>`;
-  box.innerHTML = `<table>${thead}${tbody}</table>`;
-  updateCount(rows.length, null);
+  const html = groups.map(g => {
+    const tbody = `<tbody>${g.rows.map(r=>buildRow(r,'')).join('')}</tbody>`;
+    return `<div class="group-card">
+      <div class="group-head ${getGroupClass(g.type)}">
+        <div class="group-title">📑 ${g.label}</div>
+        <small>${g.rows.length}건</small>
+      </div>
+      <table>${thead}${tbody}</table>
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `<div class="group-stack">${html}</div>`;
+  updateCount(groups.reduce((sum, g) => sum + g.rows.length, 0), null);
 }
 
 function buildRow(r, highlight) {
@@ -902,8 +936,32 @@ function renderSearchResults() {
     return;
   }
 
-  const thead = `<thead><tr>${COLS.map(c=>`<th>${COL_LABELS[c]}</th>`).join('')}</tr></thead>`;
-  const tbody = matched.map(r => buildRow(r, curSearch)).join('');
+  const re = new RegExp(`(${curSearch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  const RCOLS = ['_mainTab','_aptSub','_date', ...COLS];
+  const RLABELS = { '_mainTab':'구분', '_aptSub':'아파트명', '_date':'원장날짜', ...COL_LABELS };
+
+  const thead = `<thead><tr>${RCOLS.map(c=>`<th>${RLABELS[c]}</th>`).join('')}</tr></thead>`;
+  const tbody = matched.map(r => {
+    const cells = RCOLS.map(col => {
+      let val = r[col] || '';
+      const wrap = (col==='주소'||col==='품목1'||col==='품목2'||col==='비고') ? ' wrap' : '';
+      if (col === '_mainTab') {
+        const color = val === '잠실본동' ? ['var(--blue-l)','var(--blue)']
+                     : val === '삼전동'   ? ['var(--green-l)','var(--green)']
+                     : ['var(--orange-l)','var(--orange)'];
+        return `<td><span class="badge" style="background:${color[0]};color:${color[1]}">${val}</span></td>`;
+      }
+      if (col === '_aptSub') {
+        return `<td>${val ? `<span class="badge" style="background:var(--orange-l);color:var(--orange)">${val}</span>` : ''}</td>`;
+      }
+      if (col === '_date') return `<td><span class="badge badge-date">${val}</span></td>`;
+      if (col === '수거일자') val = val ? `<span class="badge badge-done">✅ ${val}</span>` : `<span class="badge badge-none">미수거</span>`;
+      if (col === '입금일자') val = val ? `<span class="badge badge-done">💰 ${val}</span>` : `<span class="badge badge-wait">미입금</span>`;
+      if (typeof val === 'string' && !val.includes('<span')) val = val.replace(re,'<mark>$1</mark>');
+      return `<td class="${wrap}">${val}</td>`;
+    });
+    return `<tr>${cells.join('')}</tr>`;
+  }).join('');
 
   box.innerHTML = `<table>${thead}<tbody id="tbody">${tbody}</tbody></table>`;
   updateCount(matched.length, allRows.length);
