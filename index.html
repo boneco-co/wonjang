@@ -307,7 +307,6 @@ const DB_PATH = 'wongjang_data';
 
 // 메인 탭
 const MAIN_TABS = ['잠실본동', '삼전동', '아파트'];
-const TAB_LABEL = {'잠실본동':'잠실동', '삼전동':'삼전동', '아파트':'아파트'};
 
 // 아파트 서브탭 (엑셀 시트 내 섹션 구분 키워드 → 표시 이름)
 const APT_SUBS = [
@@ -703,7 +702,7 @@ function renderTabs() {
 
   tabRow.innerHTML = MAIN_TABS.map(t => `
     <button class="tab ${t===curTab?'on':''}" onclick="switchTab('${t}')">
-      ${TAB_LABEL[t]} <span class="tab-badge">${counts[t]}</span>
+      ${t} <span class="tab-badge">${counts[t]}</span>
     </button>`).join('');
 
   // 아파트 서브탭
@@ -779,7 +778,7 @@ function getGroupClass(type) {
 
 function renderTable() {
   if (isSearchMode) return;
-  const box = document.getElementById('table-box');
+  const box  = document.getElementById('table-box');
 
   if (!curDateFilter) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
@@ -789,29 +788,29 @@ function renderTable() {
     return;
   }
 
-  const dd = allData[curDateFilter] || {};
-  let rows = [];
-
-  if (curTab === '아파트') {
-    const apt = dd['아파트'] || {};
-    const subRows = apt[curAptSub] || [];
-    rows = subRows;
-  } else {
-    rows = dd[curTab] || [];
-  }
-
-  if (!rows.length) {
+  const groups = getSelectedDateGroups();
+  if (!groups.length) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
-      <div class="empty-text">${TAB_LABEL[curTab]} 데이터가 없습니다</div>
-      <div class="empty-sub">다른 탭을 선택해 보세요</div></div>`;
+      <div class="empty-text">데이터가 없습니다</div>
+      <div class="empty-sub">해당 날짜에 데이터가 없습니다</div></div>`;
     updateCount(0, null);
     return;
   }
 
   const thead = `<thead><tr>${COLS.map(c=>`<th>${COL_LABELS[c]}</th>`).join('')}</tr></thead>`;
-  const tbody = `<tbody>${rows.map(r=>buildRow(r,'')).join('')}</tbody>`;
-  box.innerHTML = `<table>${thead}${tbody}</table>`;
-  updateCount(rows.length, null);
+  const html = groups.map(g => {
+    const tbody = `<tbody>${g.rows.map(r=>buildRow(r,'')).join('')}</tbody>`;
+    return `<div class="group-card">
+      <div class="group-head ${getGroupClass(g.type)}">
+        <div class="group-title">📑 ${g.label}</div>
+        <small>${g.rows.length}건</small>
+      </div>
+      <table>${thead}${tbody}</table>
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `<div class="group-stack">${html}</div>`;
+  updateCount(groups.reduce((sum, g) => sum + g.rows.length, 0), null);
 }
 
 function buildRow(r, highlight) {
@@ -950,8 +949,7 @@ function renderSearchResults() {
         const color = val === '잠실본동' ? ['var(--blue-l)','var(--blue)']
                      : val === '삼전동'   ? ['var(--green-l)','var(--green)']
                      : ['var(--orange-l)','var(--orange)'];
-        const displayVal = TAB_LABEL[val] || val;
-        return `<td><span class="badge" style="background:${color[0]};color:${color[1]}">${displayVal}</span></td>`;
+        return `<td><span class="badge" style="background:${color[0]};color:${color[1]}">${val}</span></td>`;
       }
       if (col === '_aptSub') {
         return `<td>${val ? `<span class="badge" style="background:var(--orange-l);color:var(--orange)">${val}</span>` : ''}</td>`;
