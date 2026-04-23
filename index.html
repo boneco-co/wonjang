@@ -91,10 +91,10 @@ body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100
 .stat-l{font-size:12px;color:var(--gray);}
 
 /* ── 검색창 ── */
-.search-section{max-width:1400px;margin:16px auto 0;padding:0 16px;display:none;}
-.search-card{background:var(--white);border-radius:14px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
-.search-card-title{font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;}
-.search-row{display:flex;gap:10px;align-items:center;}
+.search-section{max-width:1400px;margin:16px auto 0;padding:0 16px;display:block;}
+.search-card{background:var(--white);border-radius:14px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.08);max-width:980px;margin:0 auto;}
+.search-card-title{font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;text-align:center;}
+.search-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
 .search-input-wrap{flex:1;position:relative;}
 .search-input{width:100%;border:2px solid var(--border);border-radius:10px;padding:11px 16px;font-size:15px;font-family:var(--font);outline:none;transition:border-color .15s;}
 .search-input:focus{border-color:var(--blue);}
@@ -128,8 +128,8 @@ body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100
 .subtab.on{background:var(--blue-l);color:var(--blue);}
 
 /* ── 테이블 ── */
-.table-section{max-width:1400px;margin:0 auto;padding:0 16px 40px;display:none;}
-.table-box{background:var(--white);border-radius:0 12px 12px 12px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:auto;max-height:calc(100vh - 340px);}
+.table-section{max-width:1400px;margin:0 auto;padding:0 16px 40px;display:block;}
+.table-box{background:var(--white);border-radius:0 12px 12px 12px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:auto;max-height:calc(100vh - 340px);min-height:240px;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{background:var(--blue);color:#fff;}
 thead th{padding:10px 12px;text-align:center;white-space:nowrap;font-weight:700;font-size:12px;position:sticky;top:0;z-index:5;}
@@ -312,7 +312,7 @@ const APT_SUBS = [
 let allData       = {};  // { 'YYYY-MM-DD': { '잠실본동': [...], '삼전동': [...], '아파트': { '5단지': [...], ... } } }
 let curTab        = '잠실본동';
 let curAptSub     = '5단지';  // 아파트 서브탭
-let curDateFilter = 'all';   // 'all' | 'YYYY-MM-DD'
+let curDateFilter = '';      // '' | 'YYYY-MM-DD'
 let isSearchMode  = false;
 let curSearch     = '';
 let acFocusIdx    = -1;
@@ -517,13 +517,20 @@ function hideLoading() {
 function renderAll() {
   const hasDates = Object.keys(allData).length > 0;
   renderFolderTree();
-  ['stats-bar','search-section','tab-section','table-section'].forEach(id => {
-    document.getElementById(id).style.display = hasDates ? '' : 'none';
-  });
+
+  document.getElementById('search-section').style.display = '';
+  document.getElementById('table-section').style.display = '';
+  document.getElementById('stats-bar').style.display = hasDates ? '' : 'none';
+  document.getElementById('tab-section').style.display = hasDates ? '' : 'none';
+
   if (hasDates) {
     renderStats();
-    renderTabs();
+    if (isSearchMode) renderSearchResults();
+    else renderTabs();
   } else {
+    document.getElementById('tab-row').innerHTML = '';
+    document.getElementById('subtab-row').className = 'subtab-row';
+    document.getElementById('result-count').textContent = '';
     document.getElementById('table-box').innerHTML = `
       <div class="empty"><div class="empty-icon">📂</div>
       <div class="empty-text">아직 업로드된 원장이 없습니다</div>
@@ -615,7 +622,7 @@ function toggleMonth(y, mo) {
 }
 
 function selectDate(d) {
-  curDateFilter = (curDateFilter === d) ? 'all' : d;
+  curDateFilter = (curDateFilter === d) ? '' : d;
   isSearchMode  = false;
   curSearch     = '';
   document.getElementById('search-input').value = '';
@@ -629,13 +636,13 @@ function deleteDate(e, d) {
   if (!confirm(`[${d}] 원장을 삭제하시겠습니까?`)) return;
   if (!IS_FB_CONFIGURED) {
     delete allData[d];
-    if (curDateFilter === d) curDateFilter = 'all';
+    if (curDateFilter === d) curDateFilter = '';
     renderAll();
     showToast(`🗑 [${d}] 삭제 완료`);
     return;
   }
   db.ref(`${DB_PATH}/${d}`).remove()
-    .then(() => { if (curDateFilter === d) curDateFilter = 'all'; showToast(`🗑 [${d}] 삭제 완료`); })
+    .then(() => { if (curDateFilter === d) curDateFilter = ''; showToast(`🗑 [${d}] 삭제 완료`); })
     .catch(err => showToast('❌ ' + err.message));
 }
 
@@ -673,7 +680,7 @@ function renderTabs() {
   MAIN_TABS.forEach(t => {
     counts[t] = 0;
     Object.keys(allData).forEach(d => {
-      if (curDateFilter !== 'all' && d !== curDateFilter) return;
+      if (curDateFilter && d !== curDateFilter) return;
       if (t === '아파트') {
         const apt = allData[d]?.['아파트'] || {};
         Object.values(apt).forEach(a => counts[t] += a.length);
@@ -695,7 +702,7 @@ function renderTabs() {
     APT_SUBS.forEach(s => {
       subCounts[s.key] = 0;
       Object.keys(allData).forEach(d => {
-        if (curDateFilter !== 'all' && d !== curDateFilter) return;
+        if (curDateFilter && d !== curDateFilter) return;
         subCounts[s.key] += (allData[d]?.['아파트']?.[s.key] || []).length;
       });
     });
@@ -723,19 +730,19 @@ function switchAptSub(k) {
 // ═══════════════════════════════════════════
 //  테이블 렌더
 // ═══════════════════════════════════════════
-const COLS = ['_date','연번','접수자','접수일자','주소','성명','전화번호',
-  '품목1','품목2','총금액','입금일자','수거일자','비고'];
+const COLS = ['연번','접수자','접수일자','주소','성명','전화번호',
+  '품목1','금액1','품목2','금액2','총금액','입금일자','수거일자','수거원','비고'];
 const COL_LABELS = {
-  '_date':'원장날짜','연번':'연번','접수자':'접수자','접수일자':'접수일자',
+  '연번':'연번','접수자':'접수자','접수일자':'접수일자',
   '주소':'주소','성명':'성명','전화번호':'전화번호',
-  '품목1':'배출품목1','품목2':'배출품목2','총금액':'총금액',
-  '입금일자':'입금일자','수거일자':'수거일자','비고':'비고'
+  '품목1':'품목1','금액1':'금액1','품목2':'품목2','금액2':'금액2','총금액':'총금액',
+  '입금일자':'입금일자','수거일자':'수거일자','수거원':'수거원','비고':'비고'
 };
 
 function getTabRows() {
   const rows = [];
   Object.keys(allData).sort().forEach(d => {
-    if (curDateFilter !== 'all' && d !== curDateFilter) return;
+    if (curDateFilter && d !== curDateFilter) return;
     if (curTab === '아파트') {
       (allData[d]?.['아파트']?.[curAptSub] || []).forEach(r => rows.push(r));
     } else {
@@ -748,12 +755,20 @@ function getTabRows() {
 function renderTable() {
   if (isSearchMode) return;
   const box  = document.getElementById('table-box');
-  const rows = getTabRows();
 
+  if (!curDateFilter) {
+    box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
+      <div class="empty-text">입력하신 내용이 없습니다</div>
+      <div class="empty-sub">오른쪽 위 날짜를 선택하면 리스트를 볼 수 있습니다</div></div>`;
+    updateCount(0, null);
+    return;
+  }
+
+  const rows = getTabRows();
   if (!rows.length) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
       <div class="empty-text">데이터가 없습니다</div>
-      <div class="empty-sub">${curDateFilter!=='all'?'해당 날짜에 데이터가 없습니다':'파일을 업로드하세요'}</div></div>`;
+      <div class="empty-sub">해당 날짜에 데이터가 없습니다</div></div>`;
     updateCount(0, null);
     return;
   }
@@ -769,7 +784,6 @@ function buildRow(r, highlight) {
   const cells = COLS.map(col => {
     let val = r[col] || '';
     const wrap = (col==='주소'||col==='품목1'||col==='품목2'||col==='비고') ? ' wrap' : '';
-    if (col==='_date')    return `<td><span class="badge badge-date">${val}</span></td>`;
     if (col==='수거일자') val = val ? `<span class="badge badge-done">✅ ${val}</span>` : `<span class="badge badge-none">미수거</span>`;
     if (col==='입금일자') val = val ? `<span class="badge badge-done">💰 ${val}</span>` : `<span class="badge badge-wait">미입금</span>`;
     if (re && typeof val==='string' && !val.includes('<span')) val = val.replace(re,'<mark>$1</mark>');
@@ -865,7 +879,6 @@ function doSearch() {
   if (!curSearch) { clearSearch(); return; }
 
   isSearchMode  = true;
-  curDateFilter = 'all';
 
   // 탭 서브탭 숨기기
   document.getElementById('subtab-row').className = 'subtab-row';
@@ -889,37 +902,10 @@ function renderSearchResults() {
     return;
   }
 
-  // 검색 결과에는 구분 컬럼 추가
-  const RCOLS   = ['_mainTab','_aptSub','_date','연번','접수자','접수일자','주소','성명','전화번호','품목1','품목2','총금액','입금일자','수거일자','비고'];
-  const RLABELS = {'_mainTab':'지역','_aptSub':'아파트','_date':'원장날짜','연번':'연번','접수자':'접수자','접수일자':'접수일자','주소':'주소','성명':'성명','전화번호':'전화번호','품목1':'배출품목1','품목2':'배출품목2','총금액':'총금액','입금일자':'입금일자','수거일자':'수거일자','비고':'비고'};
-  const re      = new RegExp(`(${curSearch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  const thead = `<thead><tr>${COLS.map(c=>`<th>${COL_LABELS[c]}</th>`).join('')}</tr></thead>`;
+  const tbody = matched.map(r => buildRow(r, curSearch)).join('');
 
-  const TABCOLORS = {
-    '잠실본동': ['var(--blue-l)','var(--blue)'],
-    '삼전동':   ['var(--green-l)','var(--green)'],
-    '아파트':   ['var(--orange-l)','var(--orange)'],
-  };
-
-  const thead = `<thead><tr>${RCOLS.map(c=>`<th>${RLABELS[c]}</th>`).join('')}</tr></thead>`;
-  const tbody = matched.map(r => {
-    const cells = RCOLS.map(col => {
-      let val = r[col] || '';
-      const wrap = (col==='주소'||col==='품목1'||col==='품목2'||col==='비고') ? ' wrap' : '';
-      if (col==='_mainTab') {
-        const [bg,fg] = TABCOLORS[val] || ['var(--gray-l)','var(--gray)'];
-        return `<td><span class="badge" style="background:${bg};color:${fg}">${val}</span></td>`;
-      }
-      if (col==='_aptSub') return `<td style="font-size:11px;color:var(--gray)">${val}</td>`;
-      if (col==='_date')    return `<td><span class="badge badge-date">${val}</span></td>`;
-      if (col==='수거일자') val = val ? `<span class="badge badge-done">✅ ${val}</span>` : `<span class="badge badge-none">미수거</span>`;
-      if (col==='입금일자') val = val ? `<span class="badge badge-done">💰 ${val}</span>` : `<span class="badge badge-wait">미입금</span>`;
-      if (typeof val==='string' && !val.includes('<span')) val = val.replace(re,'<mark>$1</mark>');
-      return `<td class="${wrap}">${val}</td>`;
-    });
-    return `<tr>${cells.join('')}</tr>`;
-  }).join('');
-
-  box.innerHTML = `<table><thead>${thead}</thead><tbody id="tbody">${tbody}</tbody></table>`;
+  box.innerHTML = `<table>${thead}<tbody id="tbody">${tbody}</tbody></table>`;
   updateCount(matched.length, allRows.length);
 }
 
@@ -929,7 +915,7 @@ function clearSearch() {
   curSearch    = '';
   isSearchMode = false;
   hideAcList();
-  renderTabs();
+  renderAll();
 }
 
 function updateCount(found, total) {
@@ -951,12 +937,12 @@ function updateCount(found, total) {
 function confirmReset() {
   if (!confirm('누적된 모든 원장 데이터를 삭제하시겠습니까?')) return;
   if (!IS_FB_CONFIGURED) {
-    allData = {}; curDateFilter='all'; isSearchMode=false;
+    allData = {}; curDateFilter=''; isSearchMode=false;
     renderAll(); showToast('🗑 초기화 완료');
     return;
   }
   db.ref(DB_PATH).remove()
-    .then(() => { curDateFilter='all'; isSearchMode=false; showToast('🗑 초기화 완료'); })
+    .then(() => { curDateFilter=''; isSearchMode=false; showToast('🗑 초기화 완료'); })
     .catch(err => showToast('❌ ' + err.message));
 }
 
