@@ -403,13 +403,16 @@ function processFile(file) {
         if (!actualSheet) return;
         const rows = XLSX.utils.sheet_to_json(wb.Sheets[actualSheet],
           { header:1, defval:'', raw:false, dateNF:'yyyy-mm-dd' });
+        const hdr = rows[2] || [];
+        const tc  = hdr.findIndex(v => String(v||'').includes('총금액'));
+        const totalCol = tc > 0 ? tc : 12;
         const data = [];
         for (let i = 3; i < rows.length; i += 2) {
           const r = rows[i];
           const name = String(r[4] || '').trim();
           const addr = String(r[3] || '').trim();
           if (!name && !addr) continue;
-          data.push(makeRow(r, dateKey));
+          data.push(makeRow(r, dateKey, totalCol));
         }
         if (data.length) dateData[sName] = data;  // 키는 항상 '잠실본동'으로 고정
       });
