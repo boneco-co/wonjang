@@ -465,30 +465,39 @@ function processFile(file) {
   reader.readAsBinaryString(file);
 }
 
-function makeRow(r, dateKey) {
+function makeRow(r, dateKey, totalCol) {
+  const tc = (totalCol != null) ? totalCol : 12;
   const fmtDate = v => {
     if (!v) return '';
     const s = String(v);
     if (s.startsWith('=')) return '';
     return (s.includes('-') || s.includes('/')) ? s.slice(0,10) : s;
   };
+  // 품목/금액 쌍을 총금액 열 직전까지 최대 15개 동적 수집
+  const _items = [];
+  for (let i = 6; i < tc && _items.length < 15; i += 2) {
+    const p = String(r[i]   || '').trim();
+    const a = String(r[i+1] || '').trim();
+    if (p || a) _items.push({ 품목: p, 금액: fmtMoney(a) });
+  }
   return {
     _date:    dateKey,
+    _items,
     연번:     String(r[0] || '').replace(/=MAX[^)]+\)/,'').trim(),
     접수자:   String(r[1] || '').trim(),
     접수일자: fmtDate(r[2]),
     주소:     String(r[3] || '').trim(),
     성명:     String(r[4] || '').trim(),
     전화번호: String(r[5] || '').trim(),
-    품목1:    String(r[6] || '').trim(),
-    금액1:    fmtMoney(r[7]),
-    품목2:    String(r[8] || '').trim(),
-    금액2:    fmtMoney(r[9]),
-    총금액:   fmtMoney(r[12]),
-    입금일자: fmtDate(r[13]),
-    수거일자: fmtDate(r[14]),
-    수거원:   String(r[15] || '').trim(),
-    비고:     String(r[16] || '').trim(),
+    품목1:    _items[0]?.품목 || '',
+    금액1:    _items[0]?.금액 || '',
+    품목2:    _items[1]?.품목 || '',
+    금액2:    _items[1]?.금액 || '',
+    총금액:   fmtMoney(r[tc]),
+    입금일자: fmtDate(r[tc+1]),
+    수거일자: fmtDate(r[tc+2]),
+    수거원:   String(r[tc+3] || '').trim(),
+    비고:     String(r[tc+4] || '').trim(),
   };
 }
 
