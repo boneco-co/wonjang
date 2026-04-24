@@ -1015,6 +1015,21 @@ function showToast(msg) {
   t.textContent = msg; t.style.display='block';
   setTimeout(()=>t.style.display='none', 3500);
 }
+// 검색창(search-input)을 클릭했을 때 날짜 필터를 해제하는 기능
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('focus', () => {
+      // 날짜 필터가 선택되어 있는 경우에만 실행
+      if (curDateFilter !== '' && curDateFilter !== 'all') {
+        curDateFilter = '';   // 날짜 필터 초기화
+        isSearchMode = false; // 검색 모드 초기화
+        renderTabs();        // 탭 화면 갱신 (선택 표시 해제)
+        renderAll();         // 전체 데이터(6018건) 다시 출력
+      }
+    });
+  }
+});  
 </script>
 </body>
 </html>
