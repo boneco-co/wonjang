@@ -950,7 +950,7 @@ function renderSearchResults() {
         const color = val === '잠실본동' ? ['var(--blue-l)','var(--blue)']
                      : val === '삼전동'   ? ['var(--green-l)','var(--green)']
                      : ['var(--orange-l)','var(--orange)'];
-        return `<td><span class="badge" style="background:${color[0]};color:${color[1]}">${val}</span></td>`;
+      return `<td><span class="badge" style="background:${color[0]};color:${color[1]}">${val === '잠실본동' ? '잠실동' : val}</span></td>`;
       }
       if (col === '_aptSub') {
         return `<td>${val ? `<span class="badge" style="background:var(--orange-l);color:var(--orange)">${val}</span>` : ''}</td>`;
