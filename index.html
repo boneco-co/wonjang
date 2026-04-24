@@ -1087,17 +1087,15 @@ function openModal(idx) {
   ];
 
   const itemFields = [];
-  if (r._items && r._items.length) {
-    r._items.forEach((it, i) => {
-      if (it.품목) itemFields.push({ label:`품목${i+1}`, val:it.품목, icon:'📦' });
-      if (it.금액) itemFields.push({ label:`금액${i+1}`, val:it.금액, icon:'💵' });
-    });
-  } else {
-    for (let i = 1; i <= 18; i++) {
-      if (r[`품목${i}`]) itemFields.push({ label:`품목${i}`, val:r[`품목${i}`], icon:'📦' });
-      if (r[`금액${i}`]) itemFields.push({ label:`금액${i}`, val:r[`금액${i}`], icon:'💵' });
-    }
-  }
+  const items = r._items && r._items.length ? r._items : [
+    { 품목: r.품목1||'', 금액: r.금액1||'' },
+    { 품목: r.품목2||'', 금액: r.금액2||'' },
+  ].filter(it => it.품목 || it.금액);
+
+  items.forEach((it, i) => {
+    if (it.품목) itemFields.push({ label:`품목${i+1}`, val:it.품목, icon:'📦' });
+    if (it.금액) itemFields.push({ label:`금액${i+1}`, val:it.금액, icon:'💵' });
+  });
 
   const tail = [
     { label:'총금액',   val:r.총금액,   icon:'💰' },
