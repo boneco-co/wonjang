@@ -396,8 +396,9 @@ function processFile(file) {
 
       // ── 잠실본동 / 삼전동 파싱 (2행씩) ──
       ['잠실본동', '삼전동'].forEach(sName => {
-        if (!wb.SheetNames.includes(sName)) return;
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sName],
+        const actualSheet = wb.SheetNames.find(n => sName === '잠실본동' ? n.includes('잠실') : n === sName);
+        if (!actualSheet) return;
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[actualSheet],
           { header:1, defval:'', raw:false, dateNF:'yyyy-mm-dd' });
         const data = [];
         for (let i = 3; i < rows.length; i += 2) {
