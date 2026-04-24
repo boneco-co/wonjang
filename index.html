@@ -20,7 +20,7 @@
   --font:'Noto Sans KR',-apple-system,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100vh;line-height:1.45;}
+body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100vh;}
 
 /* ── Firebase 배너 ── */
 .fb-setup{background:linear-gradient(135deg,#f59e0b,#d97706);padding:12px 20px;font-size:13px;color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -37,35 +37,32 @@ body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* ── 헤더 ── */
-.hdr{background:var(--blue);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:0 10px 24px rgba(26,86,219,.18);}
-.hdr-title{font-size:20px;font-weight:900;color:#fff;display:flex;align-items:center;gap:8px;}
-.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
-.hdr-date{font-size:12px;color:rgba(255,255,255,.85);}
-.btn-reset{background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.38);color:#fff;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
-.btn-reset:hover{background:rgba(220,38,38,.28);}
+.hdr{background:var(--blue);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.hdr-title{font-size:19px;font-weight:900;color:#fff;display:flex;align-items:center;gap:8px;}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.hdr-date{font-size:12px;color:rgba(255,255,255,.8);}
+.btn-reset{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.btn-reset:hover{background:rgba(255,0,0,.3);}
 
-/* ── 공통 섹션 폭 ── */
-.top-panel,.stats-bar,.search-section,.tab-section,.table-section{max-width:1480px;margin-left:auto;margin-right:auto;padding-left:16px;padding-right:16px;}
-
-/* ── 상단 패널 (업로드 50 : 파일목록 50) ── */
-.top-panel{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+/* ── 상단 패널 ── */
+.top-panel{max-width:1400px;margin:20px auto 0;padding:0 16px;display:flex;gap:14px;flex-wrap:wrap;}
 
 /* ── 업로드 카드 ── */
-.upload-card{background:var(--white);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(15,23,42,.08);min-width:0;height:100%;}
-.upload-card h3{font-size:14px;font-weight:800;color:var(--gray);margin-bottom:12px;}
-.drop-zone{border:2.5px dashed var(--border);border-radius:16px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);}
+.upload-card{background:var(--white);border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);flex:1;min-width:280px;}
+.upload-card h3{font-size:14px;font-weight:700;color:var(--gray);margin-bottom:12px;}
+.drop-zone{border:2.5px dashed var(--border);border-radius:12px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;}
 .drop-zone:hover,.drop-zone.drag{border-color:var(--blue);background:var(--blue-l);}
 .dz-icon{font-size:32px;margin-bottom:6px;}
-.dz-title{font-size:14px;font-weight:800;margin-bottom:4px;}
+.dz-title{font-size:14px;font-weight:700;margin-bottom:4px;}
 .dz-sub{font-size:12px;color:var(--gray);}
-.dz-btn{display:inline-block;margin-top:10px;padding:10px 22px;background:var(--blue);color:#fff;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;border:none;font-family:var(--font);}
+.dz-btn{display:inline-block;margin-top:10px;padding:9px 22px;background:var(--blue);color:#fff;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);}
 .dz-btn:hover{background:var(--blue-d);}
 #file-input{display:none;}
 
 /* ── 누적 파일 폴더 트리 ── */
-.files-card{background:var(--white);border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(15,23,42,.08);min-width:0;height:100%;}
-.files-card h3{font-size:14px;font-weight:800;color:var(--gray);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
-.folder-tree{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding-right:4px;}
+.files-card{background:var(--white);border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);flex:2;min-width:300px;}
+.files-card h3{font-size:14px;font-weight:700;color:var(--gray);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.folder-tree{display:flex;flex-direction:column;gap:6px;}
 .folder-year{border:1.5px solid var(--purple);border-radius:10px;overflow:hidden;}
 .folder-year-header{background:var(--purple-l);padding:8px 14px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none;}
 .folder-year-header:hover{background:#ddd6fe;}
@@ -87,24 +84,24 @@ body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100
 .no-files{font-size:13px;color:var(--gray);padding:8px 0;}
 
 /* ── 통계 ── */
-.stats-bar{margin-top:16px;display:none;}
-.stats-inner{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;}
-.stat-card{background:var(--white);border-radius:16px;padding:14px 18px;box-shadow:0 8px 22px rgba(15,23,42,.06);display:flex;align-items:center;gap:12px;min-width:0;}
-.stat-n{font-size:24px;font-weight:900;color:var(--blue);line-height:1;}
-.stat-l{font-size:12px;color:var(--gray);font-weight:700;}
+.stats-bar{max-width:1400px;margin:14px auto 0;padding:0 16px;display:none;}
+.stats-inner{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-card{background:var(--white);border-radius:10px;padding:10px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;align-items:center;gap:10px;}
+.stat-n{font-size:22px;font-weight:900;color:var(--blue);}
+.stat-l{font-size:12px;color:var(--gray);}
 
 /* ── 검색창 ── */
-.search-section{margin-top:16px;display:block;}
-.search-card{background:var(--white);border-radius:18px;padding:18px 20px;box-shadow:0 10px 30px rgba(15,23,42,.08);max-width:none;margin:0;}
-.search-card-title{font-size:13px;font-weight:800;color:var(--gray);margin-bottom:12px;text-align:left;}
-.search-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;}
-.search-input-wrap{min-width:0;position:relative;}
-.search-input{width:100%;border:2px solid var(--border);border-radius:12px;padding:12px 16px;font-size:15px;font-family:var(--font);outline:none;transition:border-color .15s, box-shadow .15s;}
-.search-input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(26,86,219,.12);}
-.search-btn{padding:12px 20px;background:var(--blue);border:none;border-radius:12px;font-size:14px;cursor:pointer;color:#fff;font-weight:800;font-family:var(--font);white-space:nowrap;}
+.search-section{max-width:1400px;margin:16px auto 0;padding:0 16px;display:block;}
+.search-card{background:var(--white);border-radius:14px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.08);max-width:980px;margin:0 auto;}
+.search-card-title{font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;text-align:center;}
+.search-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.search-input-wrap{flex:1;position:relative;}
+.search-input{width:100%;border:2px solid var(--border);border-radius:10px;padding:11px 16px;font-size:15px;font-family:var(--font);outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--blue);}
+.search-btn{padding:11px 20px;background:var(--blue);border:none;border-radius:10px;font-size:14px;cursor:pointer;color:#fff;font-weight:700;font-family:var(--font);white-space:nowrap;}
 .search-btn:hover{background:var(--blue-d);}
-.search-clear{padding:12px 16px;background:var(--gray-l);border:none;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font);color:var(--gray);white-space:nowrap;}
-.result-count{font-size:13px;color:var(--gray);white-space:nowrap;margin-top:8px;font-weight:700;}
+.search-clear{padding:11px 16px;background:var(--gray-l);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);color:var(--gray);white-space:nowrap;}
+.result-count{font-size:13px;color:var(--gray);white-space:nowrap;margin-top:6px;}
 
 /* 드롭다운 자동완성 */
 .ac-list{position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:300;background:var(--white);border:2px solid var(--blue);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:280px;overflow-y:auto;display:none;}
@@ -118,35 +115,31 @@ body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100
 .ac-text mark{background:#fef08a;border-radius:2px;padding:0 1px;}
 
 /* ── 탭 (잠실본동 / 삼전동 / 아파트 + 하위) ── */
-.tab-section{margin-top:16px;display:none;}
-.tab-panel{background:var(--white);border-radius:18px 18px 0 0;box-shadow:0 10px 30px rgba(15,23,42,.08);overflow:hidden;}
-.tab-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 18px 12px;border-bottom:1px solid #eef2f7;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);}
-.tab-title{font-size:14px;font-weight:900;color:var(--text);}
-.tab-date{font-size:12px;font-weight:800;color:var(--blue);background:var(--blue-l);padding:6px 10px;border-radius:999px;}
-.tab-row{display:flex;gap:8px;flex-wrap:wrap;padding:14px 16px 0;background:var(--white);}
-.tab{padding:10px 16px;border-radius:12px;border:1.5px solid var(--border);font-family:var(--font);font-size:13px;font-weight:800;cursor:pointer;background:#fff;color:var(--gray);transition:all .15s;}
-.tab.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 8px 18px rgba(26,86,219,.18);}
-.tab-badge{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--blue-l);color:var(--blue);font-size:11px;}
-.tab.on .tab-badge{background:rgba(255,255,255,.2);color:#fff;}
+.tab-section{max-width:1400px;margin:14px auto 0;padding:0 16px;display:none;}
+.tab-row{display:flex;gap:5px;flex-wrap:wrap;}
+.tab{padding:9px 18px;border-radius:10px 10px 0 0;border:none;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.5);color:var(--gray);transition:all .15s;}
+.tab.on{background:var(--white);color:var(--blue);box-shadow:0 -2px 8px rgba(0,0,0,.08);}
+.tab-badge{display:inline-block;margin-left:5px;padding:1px 7px;border-radius:10px;background:var(--blue-l);color:var(--blue);font-size:11px;}
+.tab.on .tab-badge{background:var(--blue);color:#fff;}
 /* 아파트 서브탭 */
-.subtab-row{background:var(--white);padding:12px 16px 14px;display:none;gap:6px;flex-wrap:wrap;border-top:1px solid #eef2f7;}
+.subtab-row{background:var(--white);border-radius:0 12px 0 0;padding:8px 14px 0;display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--blue-l);display:none;}
 .subtab-row.show{display:flex;}
-.subtab{padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);font-family:var(--font);font-size:12px;font-weight:800;cursor:pointer;background:var(--gray-l);color:var(--gray);transition:all .15s;}
-.subtab.on{background:var(--orange-l);border-color:var(--orange);color:var(--orange);} 
+.subtab{padding:5px 14px;border-radius:8px 8px 0 0;border:none;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;background:var(--gray-l);color:var(--gray);transition:all .15s;}
+.subtab.on{background:var(--blue-l);color:var(--blue);} 
 
 /* ── 그룹 리스트 ── */
-.group-stack{display:flex;flex-direction:column;gap:16px;padding:16px;}
-.group-card{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--white);box-shadow:0 8px 18px rgba(15,23,42,.04);}
-.group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;font-size:14px;font-weight:900;flex-wrap:wrap;}
-.group-head small{font-size:12px;font-weight:800;opacity:.85;}
+.group-stack{display:flex;flex-direction:column;gap:18px;padding:14px;}
+.group-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--white);}
+.group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;font-size:14px;font-weight:800;}
+.group-head small{font-size:12px;font-weight:700;opacity:.85;}
 .group-head.jamsil{background:var(--blue-l);color:var(--blue);}
 .group-head.samjeon{background:var(--green-l);color:var(--green);}
 .group-head.apt{background:var(--orange-l);color:var(--orange);}
 .group-head .group-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 
 /* ── 테이블 ── */
-.table-section{margin-top:0;padding-bottom:40px;display:block;}
-.table-box{background:var(--white);border-radius:0 0 18px 18px;box-shadow:0 10px 30px rgba(15,23,42,.08);overflow:auto;max-height:calc(100vh - 300px);min-height:260px;}
+.table-section{max-width:1400px;margin:0 auto;padding:0 16px 40px;display:block;}
+.table-box{background:var(--white);border-radius:0 12px 12px 12px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:auto;max-height:calc(100vh - 340px);min-height:240px;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead tr{background:var(--blue);color:#fff;}
 thead th{padding:10px 12px;text-align:center;white-space:nowrap;font-weight:700;font-size:12px;position:sticky;top:0;z-index:5;}
@@ -178,19 +171,9 @@ mark{background:#fef08a;border-radius:2px;padding:0 2px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{font-size:14px;font-weight:700;color:var(--gray);}
 
-@media(max-width:980px){
-  .top-panel{grid-template-columns:1fr;}
-  .search-row{grid-template-columns:1fr;}
-  .table-box{max-height:none;}
-}
-
 @media(max-width:600px){
-  .hdr{padding:14px 16px;}
-  .hdr-title{font-size:16px;}
-  .tab-head{padding:14px 14px 10px;}
-  .tab-row,.subtab-row,.group-stack{padding-left:12px;padding-right:12px;}
-  .tab{padding:8px 12px;font-size:12px;}
-  .subtab{padding:7px 10px;font-size:11px;}
+  .hdr-title{font-size:15px;}
+  .tab{padding:7px 10px;font-size:12px;}
   table{font-size:12px;}
   td,thead th{padding:6px 8px;}
 }
@@ -271,15 +254,9 @@ mark{background:#fef08a;border-radius:2px;padding:0 2px;}
 
 <!-- 탭 -->
 <div class="tab-section" id="tab-section">
-  <div class="tab-panel">
-    <div class="tab-head">
-      <div class="tab-title" id="tab-title">📑 선택한 데이터 보기</div>
-      <div class="tab-date" id="tab-date-label">원장 날짜 미선택</div>
-    </div>
-    <div class="tab-row" id="tab-row"></div>
-    <!-- 아파트 서브탭 -->
-    <div class="subtab-row" id="subtab-row"></div>
-  </div>
+  <div class="tab-row" id="tab-row"></div>
+  <!-- 아파트 서브탭 -->
+  <div class="subtab-row" id="subtab-row"></div>
 </div>
 
 <!-- 테이블 -->
@@ -554,20 +531,13 @@ function renderAll() {
   document.getElementById('search-section').style.display = '';
   document.getElementById('table-section').style.display = '';
   document.getElementById('stats-bar').style.display = hasDates ? '' : 'none';
+  document.getElementById('tab-section').style.display = 'none';
 
   if (hasDates) {
     renderStats();
-    if (isSearchMode) {
-      document.getElementById('tab-section').style.display = 'none';
-      renderSearchResults();
-    } else {
-      ensureValidTabSelection();
-      document.getElementById('tab-section').style.display = curDateFilter ? '' : 'none';
-      if (curDateFilter) renderTabs();
-      else renderTable();
-    }
+    if (isSearchMode) renderSearchResults();
+    else renderTable();
   } else {
-    document.getElementById('tab-section').style.display = 'none';
     document.getElementById('tab-row').innerHTML = '';
     document.getElementById('subtab-row').className = 'subtab-row';
     document.getElementById('result-count').textContent = '';
@@ -652,32 +622,6 @@ function getTotalCount(dd) {
   return n;
 }
 
-function getTabCounts() {
-  const counts = { '잠실본동':0, '삼전동':0, '아파트':0 };
-  if (!curDateFilter || !allData[curDateFilter]) return counts;
-  const dd = allData[curDateFilter] || {};
-  counts['잠실본동'] = (dd['잠실본동'] || []).length;
-  counts['삼전동'] = (dd['삼전동'] || []).length;
-  counts['아파트'] = Object.values(dd['아파트'] || {}).reduce((sum, arr) => sum + arr.length, 0);
-  return counts;
-}
-
-function ensureValidTabSelection() {
-  const counts = getTabCounts();
-  const availableTabs = MAIN_TABS.filter(t => counts[t] > 0);
-  if (!availableTabs.length) return;
-  if (!counts[curTab]) curTab = availableTabs[0];
-
-  const aptAvailable = APT_SUBS.filter(s => ((allData[curDateFilter]?.['아파트']?.[s.key]) || []).length > 0);
-  if (curTab === '아파트') {
-    if (!aptAvailable.length) {
-      curTab = availableTabs.find(t => t !== '아파트') || curTab;
-      return;
-    }
-    if (!aptAvailable.some(s => s.key === curAptSub)) curAptSub = aptAvailable[0].key;
-  }
-}
-
 function toggleYear(y) {
   document.querySelector(`#fy-${y} .folder-year-header`).classList.toggle('open');
   document.getElementById(`fm-${y}`).classList.toggle('hidden');
@@ -693,8 +637,8 @@ function selectDate(d) {
   curSearch     = '';
   document.getElementById('search-input').value = '';
   document.getElementById('result-count').textContent = '';
-  if (curDateFilter) ensureValidTabSelection();
-  renderAll();
+  renderFolderTree();
+  renderTable();
 }
 
 function deleteDate(e, d) {
@@ -737,32 +681,48 @@ function renderStats() {
 //  탭 & 서브탭
 // ═══════════════════════════════════════════
 function renderTabs() {
-  if (isSearchMode || !curDateFilter) return;
+  if (isSearchMode) return;
 
-  ensureValidTabSelection();
   const tabRow = document.getElementById('tab-row');
-  const subRow = document.getElementById('subtab-row');
-  const counts = getTabCounts();
 
-  document.getElementById('tab-date-label').textContent = `원장 날짜 · ${curDateFilter}`;
-  document.getElementById('tab-title').textContent = '📑 구역별 데이터 보기';
+  // 탭별 건수
+  const counts = {};
+  MAIN_TABS.forEach(t => {
+    counts[t] = 0;
+    Object.keys(allData).forEach(d => {
+      if (curDateFilter && d !== curDateFilter) return;
+      if (t === '아파트') {
+        const apt = allData[d]?.['아파트'] || {};
+        Object.values(apt).forEach(a => counts[t] += a.length);
+      } else {
+        counts[t] += (allData[d]?.[t] || []).length;
+      }
+    });
+  });
 
-  tabRow.innerHTML = MAIN_TABS.filter(t => counts[t] > 0).map(t => `
+  tabRow.innerHTML = MAIN_TABS.map(t => `
     <button class="tab ${t===curTab?'on':''}" onclick="switchTab('${t}')">
       ${t} <span class="tab-badge">${counts[t]}</span>
     </button>`).join('');
 
+  // 아파트 서브탭
+  const subRow = document.getElementById('subtab-row');
   if (curTab === '아파트') {
-    const aptData = allData[curDateFilter]?.['아파트'] || {};
-    const availableSubs = APT_SUBS.filter(s => (aptData[s.key] || []).length > 0);
+    const subCounts = {};
+    APT_SUBS.forEach(s => {
+      subCounts[s.key] = 0;
+      Object.keys(allData).forEach(d => {
+        if (curDateFilter && d !== curDateFilter) return;
+        subCounts[s.key] += (allData[d]?.['아파트']?.[s.key] || []).length;
+      });
+    });
     subRow.className = 'subtab-row show';
-    subRow.innerHTML = availableSubs.map(s => `
+    subRow.innerHTML = APT_SUBS.map(s => `
       <button class="subtab ${s.key===curAptSub?'on':''}" onclick="switchAptSub('${s.key}')">
-        ${s.label} <span style="font-size:10px;opacity:.7">(${(aptData[s.key] || []).length})</span>
+        ${s.label} <span style="font-size:10px;opacity:.7">(${subCounts[s.key]})</span>
       </button>`).join('');
   } else {
     subRow.className = 'subtab-row';
-    subRow.innerHTML = '';
   }
 
   renderTable();
@@ -789,24 +749,25 @@ const COL_LABELS = {
   '입금일자':'입금일자','수거일자':'수거일자','수거원':'수거원','비고':'비고'
 };
 
-function getSelectedDateGroup() {
-  if (!curDateFilter || !allData[curDateFilter]) return null;
-  ensureValidTabSelection();
+function getSelectedDateGroups() {
+  if (!curDateFilter || !allData[curDateFilter]) return [];
   const dd = allData[curDateFilter] || {};
+  const groups = [];
 
-  if (curTab === '잠실본동') {
-    const rows = dd['잠실본동'] || [];
-    return rows.length ? { type:'잠실본동', label:'잠실본동', rows } : null;
+  if ((dd['잠실본동'] || []).length) {
+    groups.push({ type:'잠실본동', label:'잠실본동', rows:dd['잠실본동'] });
+  }
+  if ((dd['삼전동'] || []).length) {
+    groups.push({ type:'삼전동', label:'삼전동', rows:dd['삼전동'] });
   }
 
-  if (curTab === '삼전동') {
-    const rows = dd['삼전동'] || [];
-    return rows.length ? { type:'삼전동', label:'삼전동', rows } : null;
-  }
+  const apt = dd['아파트'] || {};
+  APT_SUBS.forEach(({key, label}) => {
+    const rows = apt[key] || [];
+    if (rows.length) groups.push({ type:'아파트', label:`아파트 · ${label}`, rows });
+  });
 
-  const aptRows = dd['아파트']?.[curAptSub] || [];
-  const aptLabel = APT_SUBS.find(s => s.key === curAptSub)?.label || curAptSub;
-  return aptRows.length ? { type:'아파트', label:`아파트 · ${aptLabel}`, rows:aptRows } : null;
+  return groups;
 }
 
 function getGroupClass(type) {
@@ -821,34 +782,35 @@ function renderTable() {
 
   if (!curDateFilter) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
-      <div class="empty-text">원장 날짜를 선택해 주세요</div>
-      <div class="empty-sub">우측 파일 목록에서 날짜를 누르면 구역별 탭이 표시됩니다</div></div>`;
+      <div class="empty-text">입력하신 내용이 없습니다</div>
+      <div class="empty-sub">오른쪽 위 날짜를 선택하면 리스트를 볼 수 있습니다</div></div>`;
     updateCount(0, null);
     return;
   }
 
-  const group = getSelectedDateGroup();
-  if (!group) {
+  const groups = getSelectedDateGroups();
+  if (!groups.length) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
-      <div class="empty-text">선택한 탭에 데이터가 없습니다</div>
-      <div class="empty-sub">다른 탭 또는 다른 날짜를 선택해 주세요</div></div>`;
+      <div class="empty-text">데이터가 없습니다</div>
+      <div class="empty-sub">해당 날짜에 데이터가 없습니다</div></div>`;
     updateCount(0, null);
     return;
   }
 
   const thead = `<thead><tr>${COLS.map(c=>`<th>${COL_LABELS[c]}</th>`).join('')}</tr></thead>`;
-  const tbody = `<tbody>${group.rows.map(r=>buildRow(r,'')).join('')}</tbody>`;
-
-  box.innerHTML = `<div class="group-stack">
-    <div class="group-card">
-      <div class="group-head ${getGroupClass(group.type)}">
-        <div class="group-title">📑 ${group.label}</div>
-        <small>${group.rows.length}건</small>
+  const html = groups.map(g => {
+    const tbody = `<tbody>${g.rows.map(r=>buildRow(r,'')).join('')}</tbody>`;
+    return `<div class="group-card">
+      <div class="group-head ${getGroupClass(g.type)}">
+        <div class="group-title">📑 ${g.label}</div>
+        <small>${g.rows.length}건</small>
       </div>
       <table>${thead}${tbody}</table>
-    </div>
-  </div>`;
-  updateCount(group.rows.length, null);
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `<div class="group-stack">${html}</div>`;
+  updateCount(groups.reduce((sum, g) => sum + g.rows.length, 0), null);
 }
 
 function buildRow(r, highlight) {
@@ -951,7 +913,8 @@ function doSearch() {
   if (!curSearch) { clearSearch(); return; }
 
   isSearchMode  = true;
-  document.getElementById('tab-section').style.display = 'none';
+
+  // 탭 서브탭 숨기기
   document.getElementById('subtab-row').className = 'subtab-row';
   document.getElementById('tab-row').innerHTML = '';
 
@@ -1052,3 +1015,4 @@ function showToast(msg) {
 </script>
 </body>
 </html>
+
