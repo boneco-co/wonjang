@@ -421,6 +421,9 @@ function processFile(file) {
       if (wb.SheetNames.includes('아파트')) {
         const rows = XLSX.utils.sheet_to_json(wb.Sheets['아파트'],
           { header:1, defval:'', raw:false, dateNF:'yyyy-mm-dd' });
+        const hdrA = rows[2] || [];
+        const tcA  = hdrA.findIndex(v => String(v||'').includes('총금액'));
+        const totalColA = tcA > 0 ? tcA : 12;
         const aptData = {};
         let curSub = null;
 
