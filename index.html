@@ -933,8 +933,9 @@ function renderSearchResults() {
   const allRows = getAllRows();
   const q       = curSearch.toLowerCase();
   const SCOLS   = ['성명','주소','전화번호','품목1','품목2','비고'];
-  const matched = allRows.filter(r => SCOLS.some(c => String(r[c]||'').toLowerCase().includes(q)));
-
+const matched = allRows
+  .filter(r => SCOLS.some(c => String(r[c]||'').toLowerCase().includes(q)))
+  .sort((a,b) => (b._date||'').localeCompare(a._date||''));
   if (!matched.length) {
     box.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>
       <div class="empty-text">"${curSearch}" 검색 결과 없음</div>
