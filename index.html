@@ -441,7 +441,7 @@ function processFile(file) {
           const addr = String(r[3] || '').trim();
           if (!name && !addr) return;
           if (!aptData[curSub]) aptData[curSub] = [];
-          aptData[curSub].push(makeRow(r, dateKey));
+          aptData[curSub].push(makeRow(r, dateKey, totalColA));
         });
 
         if (Object.keys(aptData).length) dateData['아파트'] = aptData;
