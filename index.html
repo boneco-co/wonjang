@@ -700,10 +700,10 @@ function renderTabs() {
       }
     });
   });
-
+  const TAB_LABEL = {'잠실본동':'잠실동','삼전동':'삼전동','아파트':'아파트'};
   tabRow.innerHTML = MAIN_TABS.map(t => `
     <button class="tab ${t===curTab?'on':''}" onclick="switchTab('${t}')">
-      ${t} <span class="tab-badge">${counts[t]}</span>
+      ${TAB_LABEL[t]} <span class="tab-badge">${counts[t]}</span>
     </button>`).join('');
 
   // 아파트 서브탭
