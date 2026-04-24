@@ -1032,5 +1032,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });  
 </script>
+<!-- 상세보기 모달 -->
+<div id="row-modal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)closeModal()">
+  <div style="background:#fff;border-radius:20px;padding:28px;width:min(620px,96vw);max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:900;" id="modal-title">접수 상세</div>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
 </body>
 </html>
