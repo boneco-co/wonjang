@@ -1087,10 +1087,14 @@ function openModal(idx) {
   ];
 
   const itemFields = [];
-  const items = r._items && r._items.length ? r._items : [
-    { 품목: r.품목1||'', 금액: r.금액1||'' },
-    { 품목: r.품목2||'', 금액: r.금액2||'' },
-  ].filter(it => it.품목 || it.금액);
+  // Firebase는 배열을 {0:{…},1:{…}} 객체로 저장 → Object.values로 복원
+  const rawItems = r._items;
+  const items = rawItems
+    ? (Array.isArray(rawItems) ? rawItems : Object.values(rawItems))
+    : [
+        { 품목: r.품목1||'', 금액: r.금액1||'' },
+        { 품목: r.품목2||'', 금액: r.금액2||'' },
+      ].filter(it => it.품목 || it.금액);
 
   items.forEach((it, i) => {
     if (it.품목) itemFields.push({ label:`품목${i+1}`, val:it.품목, icon:'📦' });
