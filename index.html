@@ -471,44 +471,67 @@ function processFile(file) {
   reader.readAsBinaryString(file);
 }
 
-function makeRow(r, dateKey, totalCol) {
-  const tc = (totalCol != null) ? totalCol : 12;
-  const fmtDate = v => {
-    if (!v) return '';
-    const s = String(v);
-    if (s.startsWith('=')) return '';
-    return (s.includes('-') || s.includes('/')) ? s.slice(0,10) : s;
-  };
-  // 품목/금액 쌍을 최대 15개까지 수집 (인덱스 6부터 시작, 2칸씩)
-  const _items = [];
-  // 최대 70칸까지 검색 (15개 x 2칸 + 여유)
-  for (let i = 6; i < Math.min(r.length, 70) && _items.length < 15; i += 2) {
-    const p = String(r[i]   || '').trim();
-    const a = String(r[i+1] || '').trim();
-    // 유효한 품목만 추가 (수식, 날짜 등 제외)
-    if (p && !p.startsWith('=') && !p.match(/\d{4}-\d{2}-\d{2}/) && p.length > 0) {
-      _items.push({ 품목: p, 금액: fmtMoney(a) });
+function openModal(idx) {
+  const r = _rowCache[idx];
+  if (!r) return;
+
+  const base = [
+    { label:'원장날짜', val:r._date,    icon:'📅' },
+    { label:'연번',     val:r.연번,     icon:'#'  },
+    { label:'접수자',   val:r.접수자,   icon:'👤' },
+    { label:'접수일자', val:r.접수일자, icon:'📆' },
+    { label:'주소',     val:r.주소,     icon:'📍' },
+    { label:'성명',     val:r.성명,     icon:'🙍' },
+    { label:'전화번호', val:r.전화번호, icon:'📞' },
+  ];
+
+  // _items 배열 복원 (Firebase는 배열을 객체로 저장)
+  const rawItems = r._items;
+  let items = [];
+  if (rawItems) {
+    items = Array.isArray(rawItems)
+      ? rawItems
+      : Object.values(rawItems);
+  }
+  // _items가 없으면 품목1~15 필드에서 직접 수집 (구 데이터 호환)
+  if (!items.length) {
+    for (let i = 1; i <= 15; i++) {
+      const p = r[`품목${i}`] || '';
+      const a = r[`금액${i}`] || '';
+      if (p || a) items.push({ 품목: p, 금액: a });
     }
   }
-  return {
-    _date:    dateKey,
-    _items,
-    연번:     String(r[0] || '').replace(/=MAX[^)]+\)/,'').trim(),
-    접수자:   String(r[1] || '').trim(),
-    접수일자: fmtDate(r[2]),
-    주소:     String(r[3] || '').trim(),
-    성명:     String(r[4] || '').trim(),
-    전화번호: String(r[5] || '').trim(),
-    품목1:    _items[0]?.품목 || '',
-    금액1:    _items[0]?.금액 || '',
-    품목2:    _items[1]?.품목 || '',
-    금액2:    _items[1]?.금액 || '',
-    총금액:   fmtMoney(r[tc]),
-    입금일자: fmtDate(r[tc+1]),
-    수거일자: fmtDate(r[tc+2]),
-    수거원:   String(r[tc+3] || '').trim(),
-    비고:     String(r[tc+4] || '').trim(),
-  };
+
+  const itemFields = [];
+  items.forEach((it, i) => {
+    if (it.품목) itemFields.push({ label:`품목${i+1}`, val:it.품목, icon:'📦' });
+    if (it.금액) itemFields.push({ label:`금액${i+1}`, val:it.금액, icon:'💵' });
+  });
+
+  const tail = [
+    { label:'총금액',   val:r.총금액,   icon:'💰' },
+    { label:'입금일자', val:r.입금일자, icon:'🏦' },
+    { label:'수거일자', val:r.수거일자, icon:'🚛' },
+    { label:'수거원',   val:r.수거원,   icon:'👷' },
+    { label:'비고',     val:r.비고,     icon:'📝' },
+  ];
+
+  const all = [...base, ...itemFields, ...tail].filter(f => f.val);
+
+  document.getElementById('modal-title').textContent =
+    `${r.성명 || r.주소 || '상세보기'} — 접수 상세 (물품 ${items.length}개)`;
+
+  document.getElementById('modal-body').innerHTML = all.length
+    ? all.map(f => `
+        <div style="display:grid;grid-template-columns:110px 1fr;gap:6px;
+                    padding:9px 0;border-bottom:1px solid #f3f4f6;align-items:start;">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;">${f.icon} ${f.label}</div>
+          <div style="font-size:14px;font-weight:600;color:#111827;
+                      word-break:keep-all;white-space:pre-wrap;">${f.val}</div>
+        </div>`).join('')
+    : '<div style="color:#9ca3af;font-size:14px;padding:20px 0;">내용 없음</div>';
+
+  document.getElementById('row-modal').style.display = 'flex';
 }
 
 function countRows(dateData) {
