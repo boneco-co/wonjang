@@ -1028,6 +1028,11 @@ function clearSearch() {
   curSearch    = '';
   isSearchMode = false;
   hideAcList();
+  // 폴더 트리 전부 접기
+  document.querySelectorAll('.folder-year-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-months').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.folder-month-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-days').forEach(el => el.classList.add('hidden'));
   renderAll();
 }
 
