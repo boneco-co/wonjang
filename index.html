@@ -1077,8 +1077,21 @@ document.addEventListener('DOMContentLoaded', () => {
         curDateFilter = '';   // 날짜 필터 초기화
         isSearchMode = false; // 검색 모드 초기화
         renderTabs();        // 탭 화면 갱신 (선택 표시 해제)
-        renderAll();         // 전체 데이터(6018건) 다시 출력
+        renderAll();         // 전체 데이터 다시 출력
       }
+      // 폴더 트리 전부 접기
+      document.querySelectorAll('.folder-year-header.open').forEach(el => {
+        el.classList.remove('open');
+      });
+      document.querySelectorAll('.folder-months').forEach(el => {
+        el.classList.add('hidden');
+      });
+      document.querySelectorAll('.folder-month-header.open').forEach(el => {
+        el.classList.remove('open');
+      });
+      document.querySelectorAll('.folder-days').forEach(el => {
+        el.classList.add('hidden');
+      });
     });
   }
 });  
