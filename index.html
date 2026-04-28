@@ -627,22 +627,22 @@ function renderFolderTree() {
     );
 
     html += `<div class="folder-year" id="fy-${y}">
-      <div class="folder-year-header open" onclick="toggleYear('${y}')">
+      <div class="folder-year-header" onclick="toggleYear('${y}')">
         <span class="toggle-icon">▶</span>
         📁 ${y.slice(2)}년&nbsp;<span style="font-weight:400;font-size:11px;opacity:.7">${yTotal}건</span>
       </div>
-      <div class="folder-months" id="fm-${y}">`;
+      <div class="folder-months hidden" id="fm-${y}">
 
     Object.keys(struct[y]).sort().forEach(mo => {
       let mTotal = 0;
       struct[y][mo].forEach(d => { mTotal += getTotalCount(allData[d]); });
 
       html += `<div class="folder-month" id="fmo-${y}-${mo}">
-        <div class="folder-month-header open" onclick="toggleMonth('${y}','${mo}')">
+        <div class="folder-month-header" onclick="toggleMonth('${y}','${mo}')">
           <span class="toggle-icon">▶</span>
           📂 ${parseInt(mo)}월&nbsp;<span style="font-weight:400;font-size:10px;opacity:.7">${mTotal}건</span>
         </div>
-        <div class="folder-days" id="fd-${y}-${mo}">`;
+        <div class="folder-days hidden" id="fd-${y}-${mo}">
 
       struct[y][mo].sort().forEach(d => {
         const cnt  = getTotalCount(allData[d]);
