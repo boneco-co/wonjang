@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대형폐기물 원장 조회</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{
+  --blue:#1a56db;--blue-d:#1344b8;--blue-l:#e8f0fe;
+  --red:#dc2626;--red-l:#fee2e2;
+  --green:#16a34a;--green-l:#dcfce7;
+  --yellow:#d97706;--yellow-l:#fef3c7;
+  --purple:#7c3aed;--purple-l:#ede9fe;
+  --orange:#ea580c;--orange-l:#ffedd5;
+  --gray:#6b7280;--gray-l:#f3f4f6;
+  --border:#e5e7eb;--text:#111827;--white:#fff;
+  --font:'Noto Sans KR',-apple-system,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100vh;}
+
+/* ── Firebase 배너 ── */
+.fb-setup{background:linear-gradient(135deg,#f59e0b,#d97706);padding:12px 20px;font-size:13px;color:#fff;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.fb-setup b{font-size:15px;}
+.fb-setup code{background:rgba(0,0,0,.25);border-radius:4px;padding:2px 6px;font-size:12px;font-family:monospace;}
+.fb-setup a{color:#fff;font-weight:700;}
+
+/* ── 연결 상태 ── */
+.conn-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.15);color:#fff;}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:#9ca3af;flex-shrink:0;}
+.conn-dot.online{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.3);}
+.conn-dot.offline{background:#f87171;}
+.conn-dot.loading{background:#fbbf24;animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── 헤더 ── */
+.hdr{background:var(--blue);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.hdr-title{font-size:19px;font-weight:900;color:#fff;display:flex;align-items:center;gap:8px;}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.hdr-date{font-size:12px;color:rgba(255,255,255,.8);}
+.btn-reset{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.btn-reset:hover{background:rgba(255,0,0,.3);}
+
+/* ── 상단 패널 ── */
+.top-panel{max-width:1400px;margin:20px auto 0;padding:0 16px;display:flex;gap:14px;flex-wrap:wrap;}
+
+/* ── 업로드 카드 ── */
+.upload-card{background:var(--white);border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);flex:1;min-width:280px;}
+.upload-card h3{font-size:14px;font-weight:700;color:var(--gray);margin-bottom:12px;}
+.drop-zone{border:2.5px dashed var(--border);border-radius:12px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--blue);background:var(--blue-l);}
+.dz-icon{font-size:32px;margin-bottom:6px;}
+.dz-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.dz-sub{font-size:12px;color:var(--gray);}
+.dz-btn{display:inline-block;margin-top:10px;padding:9px 22px;background:var(--blue);color:#fff;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;border:none;font-family:var(--font);}
+.dz-btn:hover{background:var(--blue-d);}
+#file-input{display:none;}
+
+/* ── 누적 파일 폴더 트리 ── */
+.files-card{background:var(--white);border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);flex:1;min-width:300px;}
+.files-card h3{font-size:14px;font-weight:700;color:var(--gray);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.folder-tree{display:flex;flex-direction:column;gap:6px;}
+.folder-year{border:1.5px solid var(--purple);border-radius:10px;overflow:hidden;}
+.folder-year-header{background:var(--purple-l);padding:8px 14px;font-size:13px;font-weight:700;color:var(--purple);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none;}
+.folder-year-header:hover{background:#ddd6fe;}
+.toggle-icon{transition:transform .2s;font-size:10px;display:inline-block;}
+.folder-year-header.open .toggle-icon{transform:rotate(90deg);}
+.folder-months{padding:8px 10px;display:flex;flex-direction:column;gap:4px;}
+.folder-months.hidden{display:none;}
+.folder-month{border:1.5px solid var(--blue);border-radius:8px;overflow:hidden;}
+.folder-month-header{background:var(--blue-l);padding:6px 12px;font-size:12px;font-weight:700;color:var(--blue);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none;}
+.folder-month-header:hover{background:#c7d8ff;}
+.folder-month-header.open .toggle-icon{transform:rotate(90deg);}
+.folder-days{padding:6px 8px;display:flex;flex-wrap:wrap;gap:5px;}
+.folder-days.hidden{display:none;}
+.day-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:16px;font-size:11px;font-weight:700;background:#f0f4f8;color:var(--gray);border:1.5px solid var(--border);cursor:pointer;transition:all .15s;}
+.day-tag:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-l);}
+.day-tag.on{background:var(--blue);border-color:var(--blue);color:#fff;}
+.day-tag .del{opacity:.6;margin-left:2px;font-size:12px;}
+.day-tag .del:hover{opacity:1;color:var(--red);}
+.no-files{font-size:13px;color:var(--gray);padding:8px 0;}
+
+/* ── 통계 ── */
+.stats-bar{max-width:1400px;margin:14px auto 0;padding:0 16px;display:none;}
+.stats-inner{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-card{background:var(--white);border-radius:10px;padding:10px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;align-items:center;gap:10px;}
+.stat-n{font-size:22px;font-weight:900;color:var(--blue);}
+.stat-l{font-size:12px;color:var(--gray);}
+
+/* ── 검색창 ── */
+.search-section{max-width:1400px;margin:16px auto 0;padding:0 16px;display:block;}
+.search-card{background:var(--white);border-radius:14px;padding:16px 20px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px;}
+.search-card-title{font-size:13px;font-weight:700;color:var(--gray);margin-bottom:10px;text-align:center;}
+.search-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.search-input-wrap{flex:1;position:relative;}
+.search-input{width:100%;border:2px solid var(--border);border-radius:10px;padding:11px 16px;font-size:15px;font-family:var(--font);outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--blue);}
+.search-btn{padding:11px 20px;background:var(--blue);border:none;border-radius:10px;font-size:14px;cursor:pointer;color:#fff;font-weight:700;font-family:var(--font);white-space:nowrap;}
+.search-btn:hover{background:var(--blue-d);}
+.search-clear{padding:11px 16px;background:var(--gray-l);border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);color:var(--gray);white-space:nowrap;}
+.result-count{font-size:13px;color:var(--gray);white-space:nowrap;margin-top:6px;}
+
+/* 드롭다운 자동완성 */
+.ac-list{position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:300;background:var(--white);border:2px solid var(--blue);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:280px;overflow-y:auto;display:none;}
+.ac-list.show{display:block;}
+.ac-item{padding:9px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.focused{background:var(--blue-l);}
+.ac-badge{font-size:10px;padding:2px 7px;border-radius:8px;background:var(--blue-l);color:var(--blue);font-weight:700;white-space:nowrap;}
+.ac-badge.addr{background:var(--green-l);color:var(--green);}
+.ac-badge.phone{background:var(--yellow-l);color:var(--yellow);}
+.ac-text mark{background:#fef08a;border-radius:2px;padding:0 1px;}
+
+/* ── 탭 (잠실본동 / 삼전동 / 아파트 + 하위) ── */
+.tab-section{max-width:1400px;margin:14px auto 0;padding:0 16px;display:none;}
+.tab-row{display:flex;gap:5px;flex-wrap:wrap;}
+.tab{padding:9px 18px;border-radius:10px 10px 0 0;border:none;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.5);color:var(--gray);transition:all .15s;}
+.tab.on{background:var(--white);color:var(--blue);box-shadow:0 -2px 8px rgba(0,0,0,.08);}
+.tab-badge{display:inline-block;margin-left:5px;padding:1px 7px;border-radius:10px;background:var(--blue-l);color:var(--blue);font-size:11px;}
+.tab.on .tab-badge{background:var(--blue);color:#fff;}
+/* 아파트 서브탭 */
+.subtab-row{background:var(--white);border-radius:0 12px 0 0;padding:8px 14px 0;display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--blue-l);display:none;}
+.subtab-row.show{display:flex;}
+.subtab{padding:5px 14px;border-radius:8px 8px 0 0;border:none;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;background:var(--gray-l);color:var(--gray);transition:all .15s;}
+.subtab.on{background:var(--blue-l);color:var(--blue);} 
+
+/* ── 그룹 리스트 ── */
+.group-stack{display:flex;flex-direction:column;gap:18px;padding:14px;}
+.group-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--white);}
+.group-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;font-size:14px;font-weight:800;}
+.group-head small{font-size:12px;font-weight:700;opacity:.85;}
+.group-head.jamsil{background:var(--blue-l);color:var(--blue);}
+.group-head.samjeon{background:var(--green-l);color:var(--green);}
+.group-head.apt{background:var(--orange-l);color:var(--orange);}
+.group-head .group-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* ── 테이블 ── */
+.table-section{max-width:1400px;margin:0 auto;padding:0 16px 40px;display:block;}
+.table-box{background:var(--white);border-radius:0 12px 12px 12px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 340px);min-height:240px;}
+table{width:max-content;min-width:100%;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:var(--blue);color:#fff;}
+thead th{padding:10px 12px;text-align:center;white-space:nowrap;font-weight:700;font-size:12px;position:sticky;top:0;z-index:5;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:nth-child(even){background:#fafafa;}
+tbody tr:hover{background:var(--blue-l);}
+td{padding:8px 12px;vertical-align:middle;white-space:nowrap;}
+td.wrap{white-space:normal;min-width:80px;max-width:160px;word-break:keep-all;}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge-done{background:var(--green-l);color:var(--green);}
+.badge-wait{background:var(--yellow-l);color:var(--yellow);}
+.badge-none{background:var(--gray-l);color:var(--gray);}
+.badge-date{background:var(--purple-l);color:var(--purple);}
+mark{background:#fef08a;border-radius:2px;padding:0 2px;}
+
+/* ── 빈 상태 ── */
+.empty{text-align:center;padding:60px 20px;color:var(--gray);}
+.empty-icon{font-size:48px;margin-bottom:12px;}
+.empty-text{font-size:16px;font-weight:700;}
+.empty-sub{font-size:13px;margin-top:6px;}
+
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:11px 22px;border-radius:12px;font-size:14px;font-weight:700;z-index:999;display:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);}
+
+/* ── 로딩 ── */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.loading-overlay.hidden{display:none;}
+.spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;font-weight:700;color:var(--gray);}
+
+@media(max-width:600px){
+  .hdr-title{font-size:15px;}
+  .tab{padding:7px 10px;font-size:12px;}
+  table{font-size:12px;}
+  td,thead th{padding:6px 8px;}
+}
+</style>
+</head>
+<body>
+
+<!-- Firebase 배너 -->
+<div class="fb-setup" id="fb-setup-banner">
+  <b>⚠️ Firebase 설정 필요</b>
+  아래 <code>firebaseConfig</code>를 실제 값으로 교체하세요.
+  &nbsp;→&nbsp;<a href="https://console.firebase.google.com/" target="_blank">🔗 Firebase 콘솔</a>
+</div>
+
+<!-- 헤더 -->
+<div class="hdr">
+  <div class="hdr-title">📋 대형폐기물 원장 조회</div>
+  <div class="hdr-right">
+    <div class="hdr-date" id="hdr-date"></div>
+    <div class="conn-badge">
+      <span class="conn-dot loading" id="conn-dot"></span>
+      <span id="conn-text">연결 중…</span>
+    </div>
+    <button class="btn-reset" onclick="confirmReset()">🗑 전체 초기화</button>
+  </div>
+</div>
+
+<!-- 상단 패널 -->
+<div class="top-panel">
+  <!-- 업로드 카드 -->
+  <div class="upload-card">
+    <h3>📂 원장 파일 추가 업로드</h3>
+    <div class="drop-zone" id="drop-zone">
+      <div class="dz-icon">📁</div>
+      <div class="dz-title">파일을 여기에 드래그하세요</div>
+      <div class="dz-sub">한 번 올리면 모든 기기에서 공유됩니다</div>
+      <button class="dz-btn" onclick="document.getElementById('file-input').click()">📁 파일 선택</button>
+      <input type="file" id="file-input" accept=".xlsx,.xls" multiple>
+    </div>
+  </div>
+
+  <!-- 폴더 트리 -->
+  <div class="files-card">
+    <h3>
+      <span>📅 누적된 원장 파일 <span id="files-count" style="color:var(--blue)">0</span>개</span>
+      <span style="font-size:11px;color:var(--gray);font-weight:400;">날짜 클릭 → 해당 원장 조회</span>
+    </h3>
+    <div class="folder-tree" id="folder-tree">
+      <div class="no-files">Firebase에 연결되면 공유 원장이 표시됩니다.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 통계 -->
+<div class="stats-bar" id="stats-bar">
+  <div class="stats-inner" id="stats-inner"></div>
+</div>
+
+<!-- 검색창 -->
+<div class="search-section" id="search-section">
+  <div class="search-card">
+    <div class="search-card-title">🔍 통합 검색 (이름 · 주소 · 전화번호 — 전체 원장 검색)</div>
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <input type="text" class="search-input" id="search-input"
+          placeholder="이름, 주소, 전화번호를 입력하세요"
+          autocomplete="off"
+          oninput="onSearchInput()"
+          onkeydown="onSearchKeydown(event)">
+        <div class="ac-list" id="ac-list"></div>
+      </div>
+      <button class="search-btn" onclick="doSearch()">🔍 검색</button>
+      <button class="search-clear" onclick="clearSearch()">✕ 초기화</button>
+    </div>
+    <div class="result-count" id="result-count"></div>
+  </div>
+</div>
+
+<!-- 탭 -->
+<div class="tab-section" id="tab-section">
+  <div class="tab-row" id="tab-row"></div>
+  <!-- 아파트 서브탭 -->
+  <div class="subtab-row" id="subtab-row"></div>
+</div>
+
+<!-- 테이블 -->
+<div class="table-section" id="table-section">
+  <div class="table-box" id="table-box">
+    <div class="empty">
+      <div class="empty-icon">📂</div>
+      <div class="empty-text">Firebase에 연결 중입니다…</div>
+      <div class="empty-sub">잠시만 기다려 주세요</div>
+    </div>
+  </div>
+</div>
+
+<div class="loading-overlay hidden" id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">처리 중…</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  Firebase 설정
+// ═══════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyD4hPKN8cdtnsVACdvBxDfoR33mAOYEuco",
+  authDomain: "boneco-wonjang.firebaseapp.com",
+  databaseURL: "https://boneco-wonjang-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "boneco-wonjang",
+  storageBucket: "boneco-wonjang.firebasestorage.app",
+  messagingSenderId: "463413861191",
+  appId: "1:463413861191:web:c6a68b67fe000baae64a62",
+  measurementId: "G-KB10ZSCQN5"
+};
+
+const IS_FB_CONFIGURED = !firebaseConfig.apiKey.includes('여기에');
+if (IS_FB_CONFIGURED) document.getElementById('fb-setup-banner').style.display = 'none';
+
+let db = null;
+if (IS_FB_CONFIGURED) {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+}
+
+// ═══════════════════════════════════════════
+//  상수 & 상태
+// ═══════════════════════════════════════════
+const DB_PATH = 'wongjang_data';
+
+// 메인 탭
+const MAIN_TABS = ['잠실본동', '삼전동', '아파트', '특수마대수거지시서'];
+
+// 아파트 서브탭 (엑셀 시트 내 섹션 구분 키워드 → 표시 이름)
+const APT_SUBS = [
+  { key: '5단지',    label: '5단지아파트' },
+  { key: '우성4차',  label: '우성4차아파트' },
+  { key: '트리지움', label: '트리지움아파트' },
+  { key: '레이크',   label: '레이크팰리스아파트' },
+  { key: '잠실현대', label: '잠실현대아파트' },
+  { key: '삼전현대', label: '삼전현대아파트' },
+  { key: '가락',     label: '가락시장' },
+];
+
+let allData       = {};  // { 'YYYY-MM-DD': { '잠실본동': [...], '삼전동': [...], '아파트': { '5단지': [...], ... } } }
+let curTab        = '잠실본동';
+let curAptSub     = '5단지';  // 아파트 서브탭
+let curDateFilter = '';      // '' | 'YYYY-MM-DD'
+let isSearchMode  = false;
+let curSearch     = '';
+let _rowCache     = [];   // 더블클릭용 행 데이터 캐시
+let acFocusIdx    = -1;
+
+// ═══════════════════════════════════════════
+//  초기화
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('hdr-date').textContent =
+    new Date().toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-input-wrap')) hideAcList();
+  });
+
+  if (!IS_FB_CONFIGURED) {
+    setConnStatus('offline', 'Firebase 미설정');
+    allData = {};
+    renderAll();
+    showToast('⚠️ Firebase 미설정 — 로컬 임시 모드');
+    return;
+  }
+
+  showLoading('원장 데이터 불러오는 중…');
+  let firstLoad = true;
+
+  db.ref('.info/connected').on('value', snap => {
+    if (snap.val()) { setConnStatus('online', '실시간 연결됨'); }
+    else            { setConnStatus('offline', '연결 끊김'); }
+  });
+
+  db.ref(DB_PATH).on('value', snap => {
+    allData = snap.val() || {};
+    if (firstLoad) { firstLoad = false; hideLoading(); }
+    renderAll();
+  }, err => {
+    hideLoading();
+    showToast('❌ Firebase 오류: ' + err.message);
+  });
+});
+
+function setConnStatus(state, label) {
+  document.getElementById('conn-dot').className   = 'conn-dot ' + state;
+  document.getElementById('conn-text').textContent = label;
+}
+
+// ═══════════════════════════════════════════
+//  파일 업로드
+// ═══════════════════════════════════════════
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  [...e.dataTransfer.files].forEach(processFile);
+});
+fileInput.addEventListener('change', e => {
+  [...e.target.files].forEach(processFile);
+  e.target.value = '';
+});
+
+function processFile(file) {
+  const dateKey = extractDateFromFilename(file.name);
+  showLoading(`[${dateKey}] 파일 읽는 중…`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb      = XLSX.read(e.target.result, { type:'binary', cellDates:true });
+      const dateData = {};
+
+     // ── 잠실본동 / 삼전동 파싱 (2행씩) ──
+      ['잠실본동', '삼전동'].forEach(sName => {
+        const actualSheet = sName === '잠실본동'
+          ? wb.SheetNames.find(n => n.includes('잠실'))
+          : wb.SheetNames.find(n => n === sName);
+        if (!actualSheet) return;
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[actualSheet],
+          { header:1, defval:'', raw:false, dateNF:'yyyy-mm-dd' });
+        const hdr = rows[2] || [];
+        const tc  = hdr.findIndex(v => String(v||'').includes('총금액'));
+        const totalCol = tc > 0 ? tc : 12;
+        const data = [];
+        for (let i = 3; i < rows.length; i++) {
+          const r = rows[i];
+          const seq = String(r[0] || '').replace(/=MAX[^)]+\)/,'').trim();
+          if (!/^\d+$/.test(seq)) continue;   // 연번 없으면 연속행 → 건너뜀
+          const name = String(r[4] || '').trim();
+          const addr = String(r[3] || '').trim();
+          if (!name && !addr) continue;
+          // 연속행 수집: 다음 연번이 나올 때까지
+          const extraRows = [];
+          let j = i + 1;
+          while (j < rows.length) {
+            const ns = String(rows[j]?.[0] || '').replace(/=MAX[^)]+\)/,'').trim();
+            if (/^\d+$/.test(ns)) break;
+            extraRows.push(rows[j]);
+            j++;
+          }
+          data.push(makeRow(r, dateKey, totalCol, extraRows));
+        }
+        if (data.length) dateData[sName] = data;  // 키는 항상 '잠실본동'으로 고정
+      });
+
+      // ── 아파트 시트 파싱 (섹션 분리) ──
+      if (wb.SheetNames.includes('아파트')) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets['아파트'],
+          { header:1, defval:'', raw:false, dateNF:'yyyy-mm-dd' });
+        const hdrA = rows[2] || [];
+        const tcA  = hdrA.findIndex(v => String(v||'').includes('총금액'));
+        const totalColA = tcA > 0 ? tcA : 12;
+        const aptData = {};
+        let curSub = null;
+
+        for (let ai = 0; ai < rows.length; ai++) {
+          const r = rows[ai];
+          const v0 = String(r[0] || '');
+          // 섹션 헤더 감지
+          const matched = APT_SUBS.find(s => v0.includes(s.key));
+          if (matched) { curSub = matched.key; continue; }
+          if (!curSub) continue;
+          // 데이터 행: 연번이 숫자이거나 MAX 수식 (첫 칸)
+          const seqRaw = String(r[0] || '').replace(/=MAX[^)]+\)/,'').trim();
+          if (!/^\d+$/.test(seqRaw)) continue;
+          const name = String(r[4] || '').trim();
+          const addr = String(r[3] || '').trim();
+          if (!name && !addr) continue;
+          // 연속행 수집
+          const aptExtra = [];
+          let aj = ai + 1;
+          while (aj < rows.length) {
+            const ns = String(rows[aj]?.[0] || '').replace(/=MAX[^)]+\)/,'').trim();
+            const isNextSection = APT_SUBS.some(s => String(rows[aj]?.[0]||'').includes(s.key));
+            if (/^\d+$/.test(ns) || isNextSection) break;
+            aptExtra.push(rows[aj]);
+            aj++;
+          }
+          if (!aptData[curSub]) aptData[curSub] = [];
+          aptData[curSub].push(makeRow(r, dateKey, totalColA, aptExtra));
+        }
+
+        if (Object.keys(aptData).length) dateData['아파트'] = aptData;
+      }
+
+      // ── 특수마대수거지시서 시트 파싱 ──
+      if (wb.SheetNames.includes('특수마대수거지시서')) {
+        const rowsM = XLSX.utils.sheet_to_json(wb.Sheets['특수마대수거지시서'],
+          { header:1, defval:'', raw:false, dateNF:'yyyy-mm-dd' });
+        const hdrM = rowsM[2] || [];
+        const data = [];
+        for (let i = 3; i < rowsM.length; i++) {
+          const r = rowsM[i];
+          const seq = String(r[0] || '').trim();
+          if (!/^\d+$/.test(seq)) continue;
+          const addr = String(r[3] || '').trim();
+          if (!addr) continue;
+          data.push(makeRowMaDae(r, dateKey));
+        }
+        if (data.length) dateData['특수마대수거지시서'] = data;
+      }
+
+      const total = countRows(dateData);
+
+      if (!IS_FB_CONFIGURED) {
+        allData[dateKey] = dateData;
+        renderAll();
+        hideLoading();
+        showToast(`✅ [${dateKey}] 로컬 완료 — ${total}건`);
+        return;
+      }
+
+      showLoading(`[${dateKey}] Firebase 저장 중…`);
+      db.ref(`${DB_PATH}/${dateKey}`).set(dateData)
+        .then(() => { hideLoading(); showToast(`✅ [${dateKey}] 공유 완료 — ${total}건`); })
+        .catch(err => { hideLoading(); showToast('❌ 저장 실패: ' + err.message); });
+
+    } catch(err) {
+      hideLoading();
+      showToast('❌ 파일 오류: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function makeRow(r, dateKey, totalCol, extraRows) {
+  const tc = (totalCol != null) ? totalCol : 12;
+  extraRows = extraRows || [];
+  const fmtDate = v => {
+    if (!v) return '';
+    const s = String(v);
+    if (s.startsWith('=')) return '';
+    return (s.includes('-') || s.includes('/')) ? s.slice(0,10) : s;
+  };
+  // 메인 행 품목 수집
+  const _items = [];
+  for (let i = 6; i < tc && _items.length < 15; i += 2) {
+    const p = String(r[i]   || '').trim();
+    const a = String(r[i+1] || '').trim();
+    if (p || a) _items.push({ 품목: p, 금액: fmtMoney(a) });
+  }
+  // 연속행 추가 품목 수집 (4번째 품목 이상)
+  for (const er of extraRows) {
+    for (let i = 6; i < tc && _items.length < 15; i += 2) {
+      const p = String(er[i]   || '').trim();
+      const a = String(er[i+1] || '').trim();
+      if (p || a) _items.push({ 품목: p, 금액: fmtMoney(a) });
+    }
+  }
+  return {
+    _date:    dateKey,
+    _items,
+    연번:     String(r[0] || '').replace(/=MAX[^)]+\)/,'').trim(),
+    접수자:   String(r[1] || '').trim(),
+    접수일자: fmtDate(r[2]),
+    주소:     String(r[3] || '').trim(),
+    성명:     String(r[4] || '').trim(),
+    전화번호: String(r[5] || '').trim(),
+    품목1:    _items[0]?.품목 || '',
+    금액1:    _items[0]?.금액 || '',
+    품목2:    _items[1]?.품목 || '',
+    금액2:    _items[1]?.금액 || '',
+    총금액:   fmtMoney(r[tc]),
+    입금일자: fmtDate(r[tc+1]),
+    수거일자: fmtDate(r[tc+2]),
+    수거원:   String(r[tc+3] || '').trim(),
+    비고:     String(r[tc+4] || '').trim(),
+  };
+}
+
+function makeRowMaDae(r, dateKey) {
+  const fmtDate = v => {
+    if (!v) return '';
+    const s = String(v);
+    if (s.startsWith('=')) return '';
+    return (s.includes('-') || s.includes('/')) ? s.slice(0,10) : s;
+  };
+  return {
+    _date:    dateKey,
+    연번:     String(r[0] || '').trim(),
+    접수자:   String(r[1] || '').trim(),
+    접수일자: fmtDate(r[2]),
+    주소:     String(r[3] || '').trim(),
+    전화번호: String(r[4] || '').trim(),
+    수거일:   fmtDate(r[5]),
+    비고:     String(r[6] || '').trim(),
+  };
+}
+
+function countRows(dateData) {
+  let n = 0;
+  ['잠실본동','삼전동'].forEach(s => { n += (dateData[s] || []).length; });
+  if (dateData['아파트']) {
+    Object.values(dateData['아파트']).forEach(arr => n += arr.length);
+  }
+  n += (dateData['특수마대수거지시서'] || []).length;
+  return n;
+}
+
+function extractDateFromFilename(name) {
+  const m = name.match(/(\d{4})[년\-\/\.]?\s*(\d{1,2})[월\-\/\.]?\s*(\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return new Date().toISOString().slice(0,10);
+}
+
+function fmtMoney(v) {
+  if (!v && v !== 0) return '';
+  if (String(v).startsWith('=')) return '';
+  const n = parseFloat(String(v).replace(/,/g,''));
+  return isNaN(n) ? '' : n.toLocaleString() + '원';
+}
+
+// ═══════════════════════════════════════════
+//  로딩
+// ═══════════════════════════════════════════
+function showLoading(msg) {
+  document.getElementById('loading-text').textContent = msg;
+  document.getElementById('loading-overlay').classList.remove('hidden');
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════
+//  전체 렌더
+// ═══════════════════════════════════════════
+function renderAll() {
+  const hasDates = Object.keys(allData).length > 0;
+  renderFolderTree();
+
+  document.getElementById('search-section').style.display = '';
+  document.getElementById('table-section').style.display = '';
+  document.getElementById('stats-bar').style.display = hasDates ? '' : 'none';
+  document.getElementById('tab-section').style.display = 'none';
+
+  if (hasDates) {
+    renderStats();
+    if (isSearchMode) renderSearchResults();
+    else renderTable();
+  } else {
+    document.getElementById('tab-row').innerHTML = '';
+    document.getElementById('subtab-row').className = 'subtab-row';
+    document.getElementById('result-count').textContent = '';
+    document.getElementById('table-box').innerHTML = `
+      <div class="empty"><div class="empty-icon">📂</div>
+      <div class="empty-text">아직 업로드된 원장이 없습니다</div>
+      <div class="empty-sub">파일을 올려주세요</div></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+//  폴더 트리
+// ═══════════════════════════════════════════
+function renderFolderTree() {
+  const dates = Object.keys(allData).sort();
+  document.getElementById('files-count').textContent = dates.length;
+  const tree = document.getElementById('folder-tree');
+
+  if (!dates.length) {
+    tree.innerHTML = '<div class="no-files">아직 업로드된 파일이 없습니다.</div>';
+    return;
+  }
+
+  const struct = {};
+  dates.forEach(d => {
+    const [y, mo] = d.split('-');
+    if (!struct[y])     struct[y] = {};
+    if (!struct[y][mo]) struct[y][mo] = [];
+    struct[y][mo].push(d);
+  });
+
+  let html = '';
+  Object.keys(struct).sort().forEach(y => {
+    let yTotal = 0;
+    Object.keys(struct[y]).forEach(mo =>
+      struct[y][mo].forEach(d => { yTotal += getTotalCount(allData[d]); })
+    );
+
+    html += `<div class="folder-year" id="fy-${y}">
+      <div class="folder-year-header" onclick="toggleYear('${y}')">
+        <span class="toggle-icon">▶</span>
+        📁 ${y.slice(2)}년&nbsp;<span style="font-weight:400;font-size:11px;opacity:.7">${yTotal}건</span>
+      </div>
+      <div class="folder-months hidden" id="fm-${y}">`;
+
+    Object.keys(struct[y]).sort().forEach(mo => {
+      let mTotal = 0;
+      struct[y][mo].forEach(d => { mTotal += getTotalCount(allData[d]); });
+
+      html += `<div class="folder-month" id="fmo-${y}-${mo}">
+        <div class="folder-month-header" onclick="toggleMonth('${y}','${mo}')">
+          <span class="toggle-icon">▶</span>
+          📂 ${parseInt(mo)}월&nbsp;<span style="font-weight:400;font-size:10px;opacity:.7">${mTotal}건</span>
+        </div>
+        <div class="folder-days hidden" id="fd-${y}-${mo}">`;
+
+      struct[y][mo].sort().forEach(d => {
+        const cnt  = getTotalCount(allData[d]);
+        const day  = d.slice(8).replace(/^0/,'');
+        const isOn = curDateFilter === d ? 'on' : '';
+        html += `<span class="day-tag ${isOn}" onclick="selectDate('${d}')">
+          📄 ${parseInt(d.slice(5,7))}/${day}
+          <span style="font-weight:400;font-size:10px;opacity:.8">(${cnt}건)</span>
+          <span class="del" onclick="deleteDate(event,'${d}')">✕</span>
+        </span>`;
+      });
+
+      html += `</div></div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  tree.innerHTML = html;
+}
+
+function getTotalCount(dd) {
+  if (!dd) return 0;
+  let n = 0;
+  ['잠실본동','삼전동'].forEach(s => { n += (dd[s] || []).length; });
+  if (dd['아파트']) Object.values(dd['아파트']).forEach(a => n += a.length);
+  n += (dd['특수마대수거지시서'] || []).length;
+  return n;
+}
+
+function toggleYear(y) {
+  document.querySelector(`#fy-${y} .folder-year-header`).classList.toggle('open');
+  document.getElementById(`fm-${y}`).classList.toggle('hidden');
+}
+function toggleMonth(y, mo) {
+  document.querySelector(`#fmo-${y}-${mo} .folder-month-header`).classList.toggle('open');
+  document.getElementById(`fd-${y}-${mo}`).classList.toggle('hidden');
+}
+
+function selectDate(d) {
+  curDateFilter = (curDateFilter === d) ? '' : d;
+  isSearchMode  = false;
+  curSearch     = '';
+  document.getElementById('search-input').value = '';
+  document.getElementById('result-count').textContent = '';
+  renderFolderTree();
+  renderTable();
+}
+
+function deleteDate(e, d) {
+  e.stopPropagation();
+  if (!confirm(`[${d}] 원장을 삭제하시겠습니까?`)) return;
+  if (!IS_FB_CONFIGURED) {
+    delete allData[d];
+    if (curDateFilter === d) curDateFilter = '';
+    renderAll();
+    showToast(`🗑 [${d}] 삭제 완료`);
+    return;
+  }
+  db.ref(`${DB_PATH}/${d}`).remove()
+    .then(() => { if (curDateFilter === d) curDateFilter = ''; showToast(`🗑 [${d}] 삭제 완료`); })
+    .catch(err => showToast('❌ ' + err.message));
+}
+
+// ═══════════════════════════════════════════
+//  통계
+// ═══════════════════════════════════════════
+function renderStats() {
+  let total=0, paid=0, done=0;
+  Object.values(allData).forEach(dd => {
+    ['잠실본동','삼전동'].forEach(s => {
+      (dd[s]||[]).forEach(r => { total++; if(r.입금일자) paid++; if(r.수거일자) done++; });
+    });
+    if (dd['아파트']) Object.values(dd['아파트']).forEach(arr =>
+      arr.forEach(r => { total++; if(r.입금일자) paid++; if(r.수거일자) done++; })
+    );
+  });
+  document.getElementById('stats-inner').innerHTML = `
+    <div class="stat-card"><div class="stat-n">${total}</div><div class="stat-l">전체 건수</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--green)">${paid}</div><div class="stat-l">입금 완료</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--blue)">${done}</div><div class="stat-l">수거 완료</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--red)">${total-done}</div><div class="stat-l">수거 미완료</div></div>
+    <div class="stat-card"><div class="stat-n" style="color:var(--purple)">${Object.keys(allData).length}</div><div class="stat-l">누적 파일</div></div>`;
+}
+
+// ═══════════════════════════════════════════
+//  탭 & 서브탭
+// ═══════════════════════════════════════════
+function renderTabs() {
+  if (isSearchMode) return;
+
+  const tabRow = document.getElementById('tab-row');
+
+  // 탭별 건수
+  const counts = {};
+  MAIN_TABS.forEach(t => {
+    counts[t] = 0;
+    Object.keys(allData).forEach(d => {
+      if (curDateFilter && d !== curDateFilter) return;
+      if (t === '아파트') {
+        const apt = allData[d]?.['아파트'] || {};
+        Object.values(apt).forEach(a => counts[t] += a.length);
+      } else {
+        counts[t] += (allData[d]?.[t] || []).length;
+      }
+    });
+  });
+  const TAB_LABEL = {'잠실본동':'잠실동','삼전동':'삼전동','아파트':'아파트','특수마대수거지시서':'특수마대'};
+  tabRow.innerHTML = MAIN_TABS.map(t => `
+    <button class="tab ${t===curTab?'on':''}" onclick="switchTab('${t}')">
+      ${TAB_LABEL[t]} <span class="tab-badge">${counts[t]}</span>
+    </button>`).join('');
+
+  // 아파트 서브탭
+  const subRow = document.getElementById('subtab-row');
+  if (curTab === '아파트') {
+    const subCounts = {};
+    APT_SUBS.forEach(s => {
+      subCounts[s.key] = 0;
+      Object.keys(allData).forEach(d => {
+        if (curDateFilter && d !== curDateFilter) return;
+        subCounts[s.key] += (allData[d]?.['아파트']?.[s.key] || []).length;
+      });
+    });
+    subRow.className = 'subtab-row show';
+    subRow.innerHTML = APT_SUBS.map(s => `
+      <button class="subtab ${s.key===curAptSub?'on':''}" onclick="switchAptSub('${s.key}')">
+        ${s.label} <span style="font-size:10px;opacity:.7">(${subCounts[s.key]})</span>
+      </button>`).join('');
+  } else {
+    subRow.className = 'subtab-row';
+  }
+
+  renderTable();
+}
+
+function switchTab(t) {
+  curTab = t;
+  renderTabs();
+}
+function switchAptSub(k) {
+  curAptSub = k;
+  renderTabs();
+}
+
+// ═══════════════════════════════════════════
+//  테이블 렌더
+// ═══════════════════════════════════════════
+const COLS = ['연번','접수자','접수일자','주소','성명','전화번호',
+  '품목1','금액1','품목2','금액2','총금액','입금일자','수거일자','수거원','비고'];
+const COLS_MADAE = ['연번','접수자','접수일자','주소','전화번호','수거일','비고'];
+const COL_LABELS = {
+  '연번':'연번','접수자':'접수자','접수일자':'접수일자',
+  '주소':'주소','성명':'성명','전화번호':'전화번호',
+  '품목1':'품목1','금액1':'금액1','품목2':'품목2','금액2':'금액2','총금액':'총금액',
+  '입금일자':'입금일자','수거일자':'수거일자','수거원':'수거원','비고':'비고'
+};
+const COL_LABELS_MADAE = {
+  '연번':'연번','접수자':'접수자','접수일자':'접수일자',
+  '주소':'주소','전화번호':'전화','수거일':'수거일','비고':'비고'
+};
+
+function getSelectedDateGroups() {
+  if (!curDateFilter || !allData[curDateFilter]) return [];
+  const dd = allData[curDateFilter] || {};
+  const groups = [];
+
+  if ((dd['잠실본동'] || []).length) {
+    groups.push({ type:'잠실본동', label:'잠실동', rows:dd['잠실본동'], isMadae:false });
+  }
+  if ((dd['삼전동'] || []).length) {
+    groups.push({ type:'삼전동', label:'삼전동', rows:dd['삼전동'], isMadae:false });
+  }
+
+  const apt = dd['아파트'] || {};
+  APT_SUBS.forEach(({key, label}) => {
+    const rows = apt[key] || [];
+    if (rows.length) groups.push({ type:'아파트', label:`아파트 · ${label}`, rows, isMadae:false });
+  });
+
+  if ((dd['특수마대수거지시서'] || []).length) {
+    groups.push({ type:'특수마대수거지시서', label:'특수마대수거지시서', rows:dd['특수마대수거지시서'], isMadae:true });
+  }
+
+  return groups;
+}
+
+function getGroupClass(type) {
+  if (type === '잠실본동') return 'jamsil';
+  if (type === '삼전동') return 'samjeon';
+  return 'apt';
+}
+
+function renderTable() {
+  _rowCache = [];
+  if (isSearchMode) return;
+  const box  = document.getElementById('table-box');
+
+  if (!curDateFilter) {
+    box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
+      <div class="empty-text">입력하신 내용이 없습니다</div>
+      <div class="empty-sub">오른쪽 위 날짜를 선택하면 리스트를 볼 수 있습니다</div></div>`;
+    updateCount(0, null);
+    return;
+  }
+
+  let groups = getSelectedDateGroups();
+  
+  // curTab에 따라 필터링
+  if (curTab === '특수마대수거지시서') {
+    groups = groups.filter(g => g.type === '특수마대수거지시서');
+  } else if (curTab === '아파트') {
+    groups = groups.filter(g => g.type === '아파트');
+  } else {
+    groups = groups.filter(g => g.type === curTab);
+  }
+  
+  if (!groups.length) {
+    box.innerHTML = `<div class="empty"><div class="empty-icon">🗂</div>
+      <div class="empty-text">데이터가 없습니다</div>
+      <div class="empty-sub">해당 날짜에 데이터가 없습니다</div></div>`;
+    updateCount(0, null);
+    return;
+  }
+
+  const html = groups.map(g => {
+    const cols = g.isMadae ? COLS_MADAE : COLS;
+    const labels = g.isMadae ? COL_LABELS_MADAE : COL_LABELS;
+    const thead = `<thead><tr>${cols.map(c=>`<th>${labels[c]}</th>`).join('')}</tr></thead>`;
+    const tbody = `<tbody>${g.rows.map(r=>buildRow(r,'',cols)).join('')}</tbody>`;
+    return `<div class="group-card">
+      <div class="group-head ${getGroupClass(g.type)}">
+        <div class="group-title">📑 ${g.label}</div>
+        <small>${g.rows.length}건</small>
+      </div>
+      <table>${thead}${tbody}</table>
+    </div>`;
+  }).join('');
+
+  box.innerHTML = `<div class="group-stack">${html}</div>`;
+  updateCount(groups.reduce((sum, g) => sum + g.rows.length, 0), null);
+}
+
+function buildRow(r, highlight, cols) {
+  cols = cols || COLS;
+  const idx = _rowCache.length;
+  _rowCache.push(r);
+  const re = highlight ? new RegExp(`(${highlight.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi') : null;
+  const cells = cols.map(col => {
+    let val = r[col] || '';
+    const wrap = (col==='주소'||col==='품목1'||col==='품목2'||col==='비고') ? ' wrap' : '';
+    if (col==='수거일자') val = val ? `<span class="badge badge-done">✅ ${val}</span>` : `<span class="badge badge-none">미수거</span>`;
+    if (col==='수거일') val = val ? `<span class="badge badge-done">✅ ${val}</span>` : `<span class="badge badge-none">미수거</span>`;
+    if (col==='입금일자') val = val ? `<span class="badge badge-done">💰 ${val}</span>` : `<span class="badge badge-wait">미입금</span>`;
+    if (re && typeof val==='string' && !val.includes('<span')) val = val.replace(re,'<mark>$1</mark>');
+    return `<td class="${wrap}">${val}</td>`;
+  });
+  return `<tr style="cursor:pointer;" ondblclick="openModal(${idx})">${cells.join('')}</tr>`;
+}
+
+// ═══════════════════════════════════════════
+//  검색
+// ═══════════════════════════════════════════
+function getAllRows() {
+  const rows = [];
+  Object.keys(allData).sort().forEach(d => {
+    ['잠실본동','삼전동'].forEach(s => {
+      (allData[d]?.[s]||[]).forEach(r => rows.push({...r, _mainTab:s, _aptSub:'', _type:'원장'}));
+    });
+    if (allData[d]?.['아파트']) {
+      APT_SUBS.forEach(({key, label}) => {
+        (allData[d]['아파트'][key]||[]).forEach(r =>
+          rows.push({...r, _mainTab:'아파트', _aptSub:label, _type:'원장'})
+        );
+      });
+    }
+    (allData[d]?.['특수마대수거지시서']||[]).forEach(r =>
+      rows.push({...r, _mainTab:'특수마대수거지시서', _aptSub:'', _type:'특수마대'})
+    );
+  });
+  return rows;
+}
+
+function onSearchInput() {
+  const q = document.getElementById('search-input').value.trim();
+  acFocusIdx = -1;
+  if (!q) { hideAcList(); return; }
+
+  const allRows = getAllRows();
+  const ql = q.toLowerCase();
+  const suggestions = [];
+  const seen = new Set();
+
+  allRows.forEach(r => {
+    const checkCols = r._type === '특수마대'
+      ? [['주소','주소'],['전화번호','전화']]
+      : [['성명','이름'],['주소','주소'],['전화번호','전화']];
+      
+    checkCols.forEach(([col, type]) => {
+      const v = String(r[col]||'');
+      if (v && v.toLowerCase().includes(ql) && !seen.has(col+':'+v)) {
+        seen.add(col+':'+v);
+        suggestions.push({ type, val:v });
+      }
+    });
+  });
+
+  if (!suggestions.length) { hideAcList(); return; }
+
+  const re   = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  const list = document.getElementById('ac-list');
+  list.innerHTML = suggestions.slice(0,12).map(s => {
+    const cls = s.type==='주소'?'addr':s.type==='전화'?'phone':'';
+    return `<div class="ac-item" onclick="selectAc(${JSON.stringify(s.val)})">
+      <span class="ac-badge ${cls}">${s.type}</span>
+      <span class="ac-text">${s.val.replace(re,'<mark>$1</mark>')}</span>
+    </div>`;
+  }).join('');
+  list.classList.add('show');
+}
+
+function onSearchKeydown(e) {
+  const list  = document.getElementById('ac-list');
+  const items = list.querySelectorAll('.ac-item');
+  if (!list.classList.contains('show')||!items.length) {
+    if (e.key==='Enter') doSearch();
+    return;
+  }
+  if (e.key==='ArrowDown') { e.preventDefault(); acFocusIdx=Math.min(acFocusIdx+1,items.length-1); }
+  else if (e.key==='ArrowUp') { e.preventDefault(); acFocusIdx=Math.max(acFocusIdx-1,0); }
+  else if (e.key==='Enter') {
+    if (acFocusIdx>=0) { selectAc(items[acFocusIdx].querySelector('.ac-text').textContent); }
+    else doSearch();
+    return;
+  } else if (e.key==='Escape') { hideAcList(); return; }
+  items.forEach((el,i) => el.classList.toggle('focused', i===acFocusIdx));
+}
+
+function selectAc(val) {
+  document.getElementById('search-input').value = val;
+  hideAcList();
+  doSearch();
+}
+function hideAcList() {
+  document.getElementById('ac-list').classList.remove('show');
+  acFocusIdx = -1;
+}
+
+function doSearch() {
+  hideAcList();
+  curSearch = document.getElementById('search-input').value.trim();
+  if (!curSearch) { clearSearch(); return; }
+
+  isSearchMode  = true;
+
+  // 탭 서브탭 숨기기
+  document.getElementById('subtab-row').className = 'subtab-row';
+  document.getElementById('tab-row').innerHTML = '';
+
+  renderSearchResults();
+  document.querySelectorAll('.folder-year-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-months').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.folder-month-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-days').forEach(el => el.classList.add('hidden'));
+}
+
+function renderSearchResults() {
+  const box     = document.getElementById('table-box');
+  const allRows = getAllRows();
+  const q       = curSearch.toLowerCase();
+  const SCOLS   = ['성명','주소','전화번호','품목1','품목2','비고'];
+  const SCOLS_MADAE = ['주소','전화번호','비고'];
+
+  const matched = allRows
+    .filter(r => {
+      const searchCols = r._type === '특수마대' ? SCOLS_MADAE : SCOLS;
+      return searchCols.some(c => String(r[c]||'').toLowerCase().includes(q));
+    })
+    .sort((a,b) => (b._date||'').localeCompare(a._date||''));
+    
+  if (!matched.length) {
+    box.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>
+      <div class="empty-text">"${curSearch}" 검색 결과 없음</div>
+      <div class="empty-sub">전체 ${allRows.length}건에서 검색했습니다</div></div>`;
+    updateCount(0, allRows.length);
+    return;
+  }
+
+  const re = new RegExp(`(${curSearch.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  const RCOLS = ['_mainTab','_aptSub','_date', ...COLS];
+  const RCOLS_MADAE = ['_mainTab','_date', ...COLS_MADAE];
+  const RLABELS = { '_mainTab':'구분', '_aptSub':'아파트명', '_date':'원장날짜', ...COL_LABELS };
+  const RLABELS_MADAE = { '_mainTab':'구분', '_date':'원장날짜', ...COL_LABELS_MADAE };
+
+  const thead = (cols, labels) => `<thead><tr>${cols.map(c=>`<th>${labels[c]}</th>`).join('')}</tr></thead>`;
+  
+  // 특수마대와 원장 분리
+  const madaeRows = matched.filter(r => r._type === '특수마대');
+  const wonjangRows = matched.filter(r => r._type === '원장');
+
+  let html = '';
+
+  if (wonjangRows.length) {
+    const tbody = wonjangRows.map(r => {
+      const cells = RCOLS.map(col => {
+        let val = r[col] || '';
+        const wrap = (col==='주소'||col==='품목1'||col==='품목2'||col==='비고') ? ' wrap' : '';
+        if (col === '_mainTab') {
+          const color = val === '잠실본동' ? ['var(--blue-l)','var(--blue)']
+                       : val === '삼전동'   ? ['var(--green-l)','var(--green)']
+                       : ['var(--orange-l)','var(--orange)'];
+        return `<td><span class="badge" style="background:${color[0]};color:${color[1]}">${val === '잠실본동' ? '잠실동' : val}</span></td>`;
+        }
+        if (col === '_aptSub') {
+          return `<td>${val ? `<span class="badge" style="background:var(--orange-l);color:var(--orange)">${val}</span>` : ''}</td>`;
+        }
+        if (col === '_date') return `<td><span class="badge badge-date">${val}</span></td>`;
+        if (col === '수거일자') val = val ? `<span class="badge badge-done">✅ ${val}</span>` : `<span class="badge badge-none">미수거</span>`;
+        if (col === '입금일자') val = val ? `<span class="badge badge-done">💰 ${val}</span>` : `<span class="badge badge-wait">미입금</span>`;
+        if (typeof val === 'string' && !val.includes('<span')) val = val.replace(re,'<mark>$1</mark>');
+        return `<td class="${wrap}">${val}</td>`;
+      });
+      const idx = _rowCache.length;
+      _rowCache.push(r);
+      return `<tr style="cursor:pointer;" ondblclick="openModal(${idx})">${cells.join('')}</tr>`;
+    }).join('');
+    html += `<div class="group-card"><div class="group-head jamsil"><div class="group-title">📑 원장</div><small>${wonjangRows.length}건</small></div><table>${thead(RCOLS, RLABELS)}<tbody id="tbody">${tbody}</tbody></table></div>`;
+  }
+
+  if (madaeRows.length) {
+    const tbody = madaeRows.map(r => {
+      const cells = RCOLS_MADAE.map(col => {
+        let val = r[col] || '';
+        const wrap = (col==='주소'||col==='비고') ? ' wrap' : '';
+        if (col === '_mainTab') {
+          return `<td><span class="badge" style="background:var(--purple-l);color:var(--purple)">특수마대</span></td>`;
+        }
+        if (col === '_date') return `<td><span class="badge badge-date">${val}</span></td>`;
+        if (col === '수거일') val = val ? `<span class="badge badge-done">✅ ${val}</span>` : `<span class="badge badge-none">미수거</span>`;
+        if (typeof val === 'string' && !val.includes('<span')) val = val.replace(re,'<mark>$1</mark>');
+        return `<td class="${wrap}">${val}</td>`;
+      });
+      const idx = _rowCache.length;
+      _rowCache.push(r);
+      return `<tr style="cursor:pointer;" ondblclick="openModal(${idx})">${cells.join('')}</tr>`;
+    }).join('');
+    html += `<div class="group-card"><div class="group-head" style="background:var(--purple-l);color:var(--purple)"><div class="group-title">📑 특수마대수거지시서</div><small>${madaeRows.length}건</small></div><table>${thead(RCOLS_MADAE, RLABELS_MADAE)}<tbody>${tbody}</tbody></table></div>`;
+  }
+
+  box.innerHTML = `<div class="group-stack">${html}</div>`;
+  updateCount(matched.length, allRows.length);
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('result-count').textContent = '';
+  curSearch    = '';
+  isSearchMode = false;
+  hideAcList();
+  renderAll();
+  document.querySelectorAll('.folder-year-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-months').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.folder-month-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-days').forEach(el => el.classList.add('hidden'));
+}
+
+function updateCount(found, total) {
+  const el = document.getElementById('result-count');
+  if (isSearchMode) {
+    el.textContent  = total !== null
+      ? `🔍 ${found}건 찾음 / 전체 누적 ${total}건`
+      : '';
+    el.style.color  = found > 0 ? 'var(--green)' : 'var(--red)';
+  } else {
+    el.textContent = found ? `총 ${found}건` : '';
+    el.style.color  = 'var(--gray)';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  전체 초기화
+// ═══════════════════════════════════════════
+function confirmReset() {
+  if (!confirm('누적된 모든 원장 데이터를 삭제하시겠습니까?')) return;
+  if (!IS_FB_CONFIGURED) {
+    allData = {}; curDateFilter=''; isSearchMode=false;
+    renderAll(); showToast('🗑 초기화 완료');
+    return;
+  }
+  db.ref(DB_PATH).remove()
+    .then(() => { curDateFilter=''; isSearchMode=false; showToast('🗑 초기화 완료'); })
+    .catch(err => showToast('❌ ' + err.message));
+}
+
+// ═══════════════════════════════════════════
+//  토스트
+// ═══════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none', 3500);
+}
+// 검색창(search-input)을 클릭했을 때 날짜 필터를 해제하는 기능
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('focus', () => {
+      // 날짜 필터가 선택되어 있는 경우에만 실행
+      if (curDateFilter !== '' && curDateFilter !== 'all') {
+        curDateFilter = '';
+        isSearchMode = false;
+        renderTabs();
+        renderAll();
+      }
+  document.querySelectorAll('.folder-year-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-months').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.folder-month-header.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.folder-days').forEach(el => el.classList.add('hidden'));
+    });
+  }
+});  
+</script>
+
+<!-- ══ 상세보기 모달 ══ -->
+<div id="row-modal" onclick="if(event.target===this)closeModal()"
+  style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.48);
+         align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:20px;padding:28px 30px;
+              width:min(640px,96vw);max-height:88vh;overflow-y:auto;
+              box-shadow:0 24px 60px rgba(0,0,0,.28);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div id="modal-title" style="font-size:17px;font-weight:900;color:#111827;"></div>
+      <button onclick="closeModal()"
+        style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;
+               font-size:18px;cursor:pointer;line-height:1;color:#6b7280;">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+function openModal(idx) {
+  const r = _rowCache[idx];
+  if (!r) return;
+
+  const base = [
+    { label:'원장날짜', val:r._date,    icon:'📅' },
+    { label:'연번',     val:r.연번,     icon:'#'  },
+    { label:'접수자',   val:r.접수자,   icon:'👤' },
+    { label:'접수일자', val:r.접수일자, icon:'📆' },
+    { label:'주소',     val:r.주소,     icon:'📍' },
+    { label:'성명',     val:r.성명,     icon:'🙍' },
+    { label:'전화번호', val:r.전화번호, icon:'📞' },
+  ];
+
+  const itemFields = [];
+  // Firebase는 배열을 {0:{…},1:{…}} 객체로 저장 → Object.values로 복원
+  const rawItems = r._items;
+  const items = rawItems
+    ? (Array.isArray(rawItems) ? rawItems : Object.values(rawItems))
+    : [
+        { 품목: r.품목1||'', 금액: r.금액1||'' },
+        { 품목: r.품목2||'', 금액: r.금액2||'' },
+      ].filter(it => it.품목 || it.금액);
+
+  items.forEach((it, i) => {
+    if (it.품목) itemFields.push({ label:`품목${i+1}`, val:it.품목, icon:'📦' });
+    if (it.금액) itemFields.push({ label:`금액${i+1}`, val:it.금액, icon:'💵' });
+  });
+
+  const tail = [
+    { label:'총금액',   val:r.총금액,   icon:'💰' },
+    { label:'입금일자', val:r.입금일자, icon:'🏦' },
+    { label:'수거일자', val:r.수거일자, icon:'🚛' },
+    { label:'수거원',   val:r.수거원,   icon:'👷' },
+    { label:'비고',     val:r.비고,     icon:'📝' },
+  ];
+
+  const all = [...base, ...itemFields, ...tail].filter(f => f.val);
+
+  document.getElementById('modal-title').textContent =
+    (r.성명 || r.주소 || '상세보기') + ' — 접수 상세';
+
+  document.getElementById('modal-body').innerHTML = all.length
+    ? all.map(f => `
+        <div style="display:grid;grid-template-columns:110px 1fr;gap:6px;
+                    padding:9px 0;border-bottom:1px solid #f3f4f6;align-items:start;">
+          <div style="font-size:12px;font-weight:700;color:#6b7280;">${f.icon} ${f.label}</div>
+          <div style="font-size:14px;font-weight:600;color:#111827;
+                      word-break:keep-all;white-space:pre-wrap;">${f.val}</div>
+        </div>`).join('')
+    : '<div style="color:#9ca3af;font-size:14px;padding:20px 0;">내용 없음</div>';
+
+  const m = document.getElementById('row-modal');
+  m.style.display = 'flex';
+}
+
+function closeModal() {
+  document.getElementById('row-modal').style.display = 'none';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>
